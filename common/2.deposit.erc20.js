@@ -12,6 +12,14 @@ const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg ===
 const value = 100000
 const abiPath = "../contracts/SimpleToken.abi"
 //=============================
+const args = process.argv.slice(2)
+if (args.length != 1) {
+  console.log('node  2.deposit.erc20.js  configPath')
+  process.exit(0)
+}
+
+let confPath = args[0]
+
 let conf = null
 let accountFrom = null
 let accountConf = null
@@ -37,14 +45,17 @@ async function init() {
     test.setTestEnv(httpRpcUrl, conf)
     request = test.ethReq('eth_chainId')
     response = await utils.sendHttp(request)
-    test.customChain(response)
+    let chainId = Web3Utils.hexToNumber(response)
+    LOG(`ChainId: ${chainId} ${response}`)
+    test.customChain(chainId)
+}
+
+async function run() {
 
     request = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
     response = await utils.sendHttp(request)
     senderNonce = Web3Utils.hexToNumber(response)
-}
-
-async function run() {
+    //LOG(`NONCE: ${senderNonce} ${response}`)
 
     const acountCnt = accountConf.length
     LOG(`Account Count: ${acountCnt}`)

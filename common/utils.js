@@ -1,20 +1,13 @@
 const fs = require('fs');
 
 const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}`)
-const defaultConfig = '../configs/agent.json'
+const defaultConfigDir = '../configs/'
 let confPath = null
 let confContent = null;
-exports.loadConf = function(_confPath=null) {
+exports.loadConf = function(_confPath) {
 
-    confPath = _confPath
-    if (confPath == null || confPath == 'null') {
-        confPath = defaultConfig
-    }
-
-    if (fs.existsSync(confPath) == false) {
-        ERROR(`Not found: ${confPath}`)
-        process.exit(1)
-    }
+    confPath = checkPath(_confPath)
+    
     confContent = fs.readFileSync(confPath, 'utf8')
     const conf = JSON.parse(confContent)
 
@@ -24,21 +17,43 @@ exports.loadConf = function(_confPath=null) {
 
     if (conf.jwt != undefined && conf.jwt.length > 30) {
         conf.httpheaders= { "Content-Type": "application/json", "Authorization": "Bearer " + conf.jwt }
-      }
-      else {
+    }
+    else {
         conf.httpheaders= { "Content-Type": "application/json" }
-      }
+    }
 
     return conf
 }
 
+exports.getweb3HttpHeader = function (conf) {
+
+    const httpOptions = {
+        headers: [
+            { name: "Content-Type", value: "application/json"}
+        ]
+    };
+    if (conf.jwt != undefined && conf.jwt.length > 30) {
+        httpOptions.headers.push({ name: "Authorization", value: "Bearer " + jwt_token })
+    }
+    return httpOptions
+}
+
+function checkPath(_confPath) {
+    if (fs.existsSync(_confPath) == false) {
+        if (fs.existsSync(defaultConfigDir + _confPath) == false) {
+            ERROR(`Not found: ${_confPath}`)
+            process.exit(1)
+        }
+        else {
+            return defaultConfigDir + _confPath
+        }
+    }
+    return _confPath
+}
+
 exports.loadJson = function (path) {
 
-    if (fs.existsSync(path) == false) {
-        ERROR(`Not found: ${path}`)
-        process.exit(1)
-    }
-
+    path = checkPath(path)
     const jsonContent = fs.readFileSync(path, 'utf8')
     return JSON.parse(jsonContent)
 }
@@ -53,10 +68,9 @@ exports.convertPrivKeyToAccount = function (privkey) {
     if (privkey.indexOf('0x') == 0){
         privkey = privkey.substring(2)
     }
-
     let privKeyBuf = Buffer.from(privkey, 'hex')
     let addressBuf = Address.fromPrivateKey(privKeyBuf)
-    let address = Buffer.from(addressBuf, 'hex')
+    let address = addressBuf.toString('hex')
     return {
             address,
             privKeyBuf,

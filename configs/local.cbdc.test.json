@@ -1,5 +1,5 @@
 {
-  "erc20Address": "0x42699A7612A82f1d9C36148af9C77354759b210b",
+  "erc20Address": "0x2be7f93E49425ccb1125Ec99311d7A6257B3D70d",
   "ownerPrivKey": "8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63",
   "endpointfile": "local.cbdc.test.endpoints.json",
   "accountfile": "accounts_10.json",

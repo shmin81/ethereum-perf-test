@@ -36,7 +36,7 @@ const request = {
     body: []
 }
 
-exports.setTestEnv = function (_httpRpcUrl, _config, _gas=50000) {
+exports.setTestEnv = function (_httpRpcUrl, _config, _gas=70000) {
 
     contractAddr = _config.erc20Address
     gasHex = Web3_Utils.toHex(_gas);
@@ -54,14 +54,14 @@ exports.transferReq = function (senderKey, receiver, nonce, amount=1) {
         gasLimit: gasHex,
         gasPrice: '0x00', // 10 Gwei
         to: contractAddr,
-        data: ABIHelper.prototype.getFuncCallDataABI(transferObj, [`${receiver}`, amount])
+        data: ABIHelper.getCallDataByABI(transferObj, [`${receiver}`, amount])
     }
     
     // sign the transaction
     const txObj = Transaction.fromTxData(txData, { common: customChain })
-    LOG(`tx: ${JSON.stringify(txObj)}`)
+    //console.log(`tx: ${JSON.stringify(txObj)}`)
     const signedObj = txObj.sign(senderKey)
-    LOG(`signed tx: ${JSON.stringify(signedObj)}`)
+    console.log(`signed tx: ${JSON.stringify(signedObj)}`)
     const signedTx = signedObj.serialize().toString('hex')
 
     // fire away!
@@ -111,16 +111,14 @@ const balanceOfBody = {
     id: 0
 }
 exports.balanceOf = function (account) {
-    
+
     const txData = {
         to: contractAddr,
-        from: account,
-        value: 0,
-        data: ABIHelper.prototype.getFuncCallDataABI(balanceOfObj, [`${account}`])
+        data: ABIHelper.getCallDataByABI(balanceOfObj, [`${account}`])
     }
     balanceOfBody.params = [txData, "latest"]
     balanceOfBody.id++
-
+    //console.log(txData)
     request.body = balanceOfBody
 
     return new Promise(function(resolve, reject) {

@@ -66,15 +66,8 @@ server.listen(port, async () => {
 	try {
     let connection = null
     let httpProvider = {}
-    /*if (conf.jwt != undefined && conf.jwt.length > 30) {
-      httpheaders= { "Content-Type": "application/json", "Authorization": "Bearer " + conf.jwt }
-      httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, { headers: httpheaders });
-    }
-    else {
-      httpheaders= { "Content-Type": "application/json" }
-      httpProvider = new Web3.providers.HttpProvider(httpRpcUrl);
-    }*/
-    httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, { headers: conf.httpheaders });
+
+    httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
     connection = new Web3(httpProvider)
 
     let chainId = await connection.eth.getChainId()
@@ -86,7 +79,6 @@ server.listen(port, async () => {
 
       const account = accountConf[i+startIdx]
       account.senderPrivKeyBytes = Buffer.from(account.privKey, 'hex')
-
       account.senderToken = await test.balanceOf(account.sender)
       if (account.senderToken < 10000) {
         INFO(`Low sender's money: ${account.senderToken}`)

@@ -10,7 +10,7 @@ const confPath = 'interval.txt'
 const intervalOffset = 2
 
 let remained=100000000000
-let tickInterval = 998
+let tickInterval = 1000
 let param = []
 
 const args = process.argv.slice(2);
@@ -33,10 +33,10 @@ if (args[3] != undefined) {
     param.push(args[3])
 }
 INFO(`test option => Interval:${tickInterval}, Tx:${remained}, nonceOffset:${param}`)
-const maxCnt = remained
-remained--; // 종료모드 관련 처리
+//const maxCnt = remained
 
-fs.writeFileSync(confPath, tickInterval.toString());
+fs.writeFileSync(confPath, (tickInterval).toString());
+tickInterval -= intervalOffset
 
 function updateStatus() {
 
@@ -45,10 +45,19 @@ function updateStatus() {
         else { 
             let iVal = parseInt(data);
             //console.log(txid, 'read:',  data, iVal);
-            if (iVal > 4 && iVal < 15000) {
-                if (iVal != tickInterval) {
-                    INFO(`update tx interval ${tickInterval} ====>>>> ${iVal}`);
-                    tickInterval = iVal;
+            if (iVal > intervalOffset) {
+                if (iVal != (tickInterval+intervalOffset)) {
+                    INFO(`update tx interval ${tickInterval+intervalOffset} ====>>>> ${iVal}`);
+                    tickInterval = iVal-intervalOffset;
+                }
+            }
+            else if (iVal > 0) {
+                if (tickInterval > 2) {
+                    INFO(`update tx interval ${tickInterval+intervalOffset} ====>>>> ${iVal}`);
+                    tickInterval = iVal
+                }
+                else {
+                    // 변경 필요없음
                 }
             }
             else {
@@ -81,7 +90,7 @@ async function sendhttp() {
 
     body.id = reqId++    
     request.body = body
-  
+    //INFO(JSON.stringify(request, null, 2))
     let response = await httpRequest.post(request)
     //INFO(JSON.stringify(response, null, 2))
     if (response.statusCode == 200) {
@@ -101,11 +110,10 @@ async function eachTest()
         remained--;
         let timerId = setTimeout(function() { 
             eachTest();
-        }, tickInterval-intervalOffset);
+        }, tickInterval);
     }
     else {
         clearInterval(chkTimerId);
-        process.exit(0)
     }
 
     sendhttp();

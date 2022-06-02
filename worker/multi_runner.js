@@ -12,7 +12,7 @@ const intervalOffset = 2
 
 let agent_ip = 'localhost'
 let remained=100000000000
-let tickInterval = 998
+let tickInterval = 1000
 let param = []
 
 const args = process.argv.slice(2);
@@ -22,16 +22,10 @@ if (args[0] == undefined) {
     process.exit(2); 
 }
 
-//let httpRpcUrl = `http://${args[0]}/transfer`
-//INFO(`rpc: ${httpRpcUrl}`)
 const configPath = args[0]
-
-
-
 if (args[1] != undefined) {
     agent_ip = args[1]
 }
-
 if (args[2] != undefined) {
     tickInterval = parseInt(args[2])
 }
@@ -42,8 +36,7 @@ if (args[4] != undefined) {
     param.push(args[4])
 }
 INFO(`test option => Interval:${tickInterval}, Tx:${remained}, nonceOffset:${param}`)
-const maxCnt = remained
-remained--; // 종료모드 관련 처리
+//const maxCnt = remained
 
 const conf = utils.loadConf(configPath)
 
@@ -56,7 +49,8 @@ for (let i=0; i<minerCnt; i++) {
     rpcUrls.push(`http://${agent_ip}:${conf.startPortNumber+i}/transfer`)
 }
 
-fs.writeFileSync(confPath, tickInterval.toString());
+fs.writeFileSync(confPath, (tickInterval).toString());
+tickInterval -= intervalOffset
 
 function updateStatus() {
 
@@ -65,10 +59,19 @@ function updateStatus() {
         else { 
             let iVal = parseInt(data);
             //console.log(txid, 'read:',  data, iVal);
-            if (iVal > 4 && iVal < 15000) {
-                if (iVal != tickInterval) {
-                    INFO(`update tx interval ${tickInterval} ====>>>> ${iVal}`);
-                    tickInterval = iVal;
+            if (iVal > intervalOffset) {
+                if (iVal != (tickInterval+intervalOffset)) {
+                    INFO(`update tx interval ${tickInterval+intervalOffset} ====>>>> ${iVal}`);
+                    tickInterval = iVal-intervalOffset;
+                }
+            }
+            else if (iVal > 0) {
+                if (tickInterval > 2) {
+                    INFO(`update tx interval ${tickInterval+intervalOffset} ====>>>> ${iVal}`);
+                    tickInterval = iVal
+                }
+                else {
+                    // 변경 필요없음
                 }
             }
             else {
@@ -106,7 +109,7 @@ async function sendhttp() {
     body.id = reqId++
     request.uri = rpcUrls[rpcIdx++]
     request.body = body
-  
+    //INFO(JSON.stringify(request, null, 2))
     let response = await httpRequest.post(request)
     //INFO(JSON.stringify(response, null, 2))
     if (response.statusCode == 200) {
@@ -126,11 +129,10 @@ async function eachTest()
         remained--;
         let timerId = setTimeout(function() { 
             eachTest();
-        }, tickInterval-intervalOffset);
+        }, tickInterval);
     }
     else {
         clearInterval(chkTimerId);
-        process.exit(0)
     }
 
     sendhttp();

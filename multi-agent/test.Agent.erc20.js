@@ -112,7 +112,7 @@ const transfer = async (req, res) => {
   let ps = req.body.params
   let nonceOffset = 0
   //console.log('request params:', ps.length, ps)
-  if (ps.length > 0) {
+  if (Array.isArray(ps) && ps.length > 0) {
     nonceOffset = Number(ps[0])
     INFO(`params[0] nonce offset: ${nonceOffset} from [${ps[0]} ${typeof(ps[0])}]`)
   }

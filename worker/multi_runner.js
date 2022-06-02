@@ -3,7 +3,8 @@ const fs = require("fs");
 const httpRequest = require('request-promise')
 const utils = require('../common/utils')
 
-const INFO = (msg) => console.log(`${new Date().toISOString()} [INFO] ${msg}`)
+// const INFO = (msg) => console.log(`${new Date().toISOString()} [INFO] ${msg}`)
+const INFO = (msg) => console.log(`[INFO] ${msg}`)
 const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}`)
 
 // 장기간 실행중 실행 간격을 변경하거나 실행을 종료하고자 할 경우, 이 파일의 값을 수정
@@ -76,8 +77,8 @@ function updateStatus() {
             }
             else {
                 // 종료 모드
-                //remained = 0;
-                process.exit(0)
+                remained = 0;
+                //process.exit(0)
             }
         }
     });
@@ -131,21 +132,33 @@ async function eachTest()
         }, tickInterval);
     }
     else {
-        clearInterval(chkTimerId);
+        let endTime = new Date()
+        INFO(`end time: ${endTime.toISOString()}`)
+        INFO(`time: ${(endTime-startTime)/1000} seconds`)
+        if (chkTimerId != null) {
+            clearInterval(chkTimerId);
+        }
     }
 
     sendhttp();
 }
 
-let chkTimerId;
+let startTime = null
+let chkTimerId = null;
 async function mainTest() {
 
-    eachTest();
+    // test 예상 시간이 1분 이상인 경우
+    if (remained * (tickInterval+intervalOffset) > 60 * 1000) {
+        // 2초마다 설정값을 확인
+        chkTimerId = setInterval(function() {
+            updateStatus();
+        }, 2000);
+    }
 
-    // 2초마다 설정값을 확인
-    chkTimerId = setInterval(function() {
-        updateStatus();
-    }, 2000);
+    startTime = new Date()
+    INFO(`start time: ${startTime.toISOString()}`)
+    
+    eachTest();
 }
 
 mainTest( );

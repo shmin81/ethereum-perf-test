@@ -14,33 +14,27 @@ const ERROR = (msg) => console.error(msg)
 // Environment variables
 const args = process.argv.slice(2)
 if (args.length < 3) {
-  console.log('node  test.Agent.erc20.js  portNumber  minerIdx  accountStartIdx [configPath]')
+  console.log('node  test.Agent.erc20.js  portNumber  minerIdx  accountStartIdx configPath')
   process.exit(0)
 }
 const port = Number(args[0])
 const minerIdx = Number(args[1])
 const startIdx = Number(args[2])
 
+// Configurations from file
 let confPath = null
 if (args.length == 4) {
   confPath = args[3]
 }
 const conf = utils.loadConf(confPath)
 
-INFO(`agent server port:${port}`)
-//INFO(`-minerIndex:${minerIdx}`)
-//INFO(`-accountIndex:${startIdx}`)
-// Configurations from file
-let successCount = 0
-//let httpheaders = {}
-//let customCommon = null
-
 // In-memory status
 let accounts = {}
 let acountCnt = 0
 let acountLock = 0
+let successCount = 0
 
-let txGasLimit = 50000
+let txGasLimit = 70000
 
 // Express
 const app = express()
@@ -71,7 +65,6 @@ server.listen(port, async () => {
     connection = new Web3(httpProvider)
 
     let chainId = await connection.eth.getChainId()
-    //customCommon = test.customChain(chainId)
     test.customChain(chainId)
     test.setTestEnv(httpRpcUrl, conf, txGasLimit)
 
@@ -91,7 +84,6 @@ server.listen(port, async () => {
       account.startTxCount = account.nonceLock
 
       accounts[i] = account;
-
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)
     }
     
@@ -132,7 +124,7 @@ const transfer = async (req, res) => {
     .then(response => {
       try {
         if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
-          const output = { result: true, accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
+          const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
           INFO(`Success! - ${JSON.stringify(output)}`)
           res.status(200)
           res.set('Content-Type', 'application/json;charset=utf8')
@@ -140,7 +132,7 @@ const transfer = async (req, res) => {
           successCount++
         } else {
           // console.dir(response)
-          const output = { result: false, accIdLock, nonce, req: request, res: response.body.error, id: reqId }
+          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error, id: reqId }
           ERROR(`Need check! - ${JSON.stringify(output)}`)
           res.status(500)
           res.set('Content-Type', 'application/json;charset=utf8')
@@ -152,7 +144,7 @@ const transfer = async (req, res) => {
       }
     })
     .catch(err => {
-      const output = { result: false, accIdLock, nonce, res: `NA`, id: reqId, error: `${err}` }
+      const output = { result: false, accIdx: accIdLock, nonce, res: `NA`, id: reqId, error: `${err}` }
       ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
       res.status(500)
       res.set('Content-Type', 'application/json;charset=utf8')

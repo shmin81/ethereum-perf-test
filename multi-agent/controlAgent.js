@@ -28,7 +28,7 @@ INFO(`num of nodes: ${minerCnt}`)
 // account
 const accountConf = utils.loadJson(conf.accountfile)
 const accountCnt = accountConf.length
-INFO(`num of accounts: ${accountCnt}`)
+INFO(`num of accounts: ${accountCnt} [${conf.numberOfAccounts}]`)
 
 if ( minerCnt * conf.numberOfAccounts + conf.startAccountIdx > accountCnt) {
   ERROR(`account 개수 부족 (${minerCnt * conf.numberOfAccounts + conf.startAccountIdx}개의 계정셋이 필요함)`)
@@ -41,27 +41,25 @@ let runningTask = 0
 let childs = []
 function newProcess(id, portNum, minerIdx, accountIdx) {
   runningTask++;
-  INFO(`=========================================================`);
-  INFO(`[${id}] new test process => node ${nodeScript} ${portNum} ${minerIdx} ${accountIdx} ${confPath}`);
+  //INFO(`=========================================================`);
+  INFO(`[${id}] new test process => node ${nodeScript} ${portNum} ${minerIdx} ${accountIdx} ${confPath}\n`);
 
   let process2 = spawn("node", [ nodeScript, portNum, minerIdx, accountIdx, confPath ]);
   childs.push(process2)
   
   process2.stderr.on('data', function(data) {
       //let dataStr = data.toString();
-      ERROR(`${id}: ${data}`)
-      // 졸료
+      ERROR(`[${id}] ${data}`)
       exitAll()
   });
   process2.stdout.on('data', function(data) {
-      INFO(`${id} ${data}`)
+      INFO(`[${id}] ${data}`)
   });
   process2.on('exit', function(code) {
       runningTask--;
       let now = new Date();
       let msg = `${now.toISOString()} [${id}] exit [code: ${code}] -> ${runningTask} task remained.`;
       console.log(msg);
-      //process.exit(1);
       exitAll()
   })
 }

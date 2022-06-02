@@ -2,15 +2,14 @@
 const Common = require('@ethereumjs/common').default
 let customChain = null
 exports.customChain = function (chainId, forkStr='istanbul') {
-    //INFO(`chainId: ${chainId}, fork: ${forkStr}`)
     let networkComm = { chainId, networkId: chainId, defaultHardfork: forkStr }
+    //console.log(networkComm)
     customChain = Common.custom(networkComm)
     return customChain
 }
 
 const ABIHelper = require('../common/abi')
 const httpRequest = require('request-promise')
-//const Tx = require('ethereumjs-tx').Transaction
 const { Transaction } = require('@ethereumjs/tx')
 const Web3_Utils = require('web3-utils')
 
@@ -61,7 +60,7 @@ exports.transferReq = function (senderKey, receiver, nonce, amount=1) {
     const txObj = Transaction.fromTxData(txData, { common: customChain })
     //console.log(`tx: ${JSON.stringify(txObj)}`)
     const signedObj = txObj.sign(senderKey)
-    console.log(`signed tx: ${JSON.stringify(signedObj)}`)
+    //console.log(`signed tx: ${JSON.stringify(signedObj)}`)
     const signedTx = signedObj.serialize().toString('hex')
 
     // fire away!
@@ -125,12 +124,11 @@ exports.balanceOf = function (account) {
       httpRequest.post(request)
         .then(response => {
             if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
-                console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
+                //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
                 resolve(Web3_Utils.hexToNumber(response.body.result))
             }
             else {
                 console.error(response)
-                process.exit(1)
             }
         })
         .catch(err => {

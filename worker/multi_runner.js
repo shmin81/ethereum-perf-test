@@ -105,8 +105,8 @@ async function sendhttp() {
      if (rpcIdx == minerCnt) {
         rpcIdx = 0
     }
-
-    body.id = reqId++
+    let requestId = reqId++
+    body.id = requestId
     request.uri = rpcUrls[rpcIdx++]
     request.body = body
     //INFO(JSON.stringify(request, null, 2))
@@ -114,19 +114,18 @@ async function sendhttp() {
     //INFO(JSON.stringify(response, null, 2))
     if (response.statusCode == 200) {
       if (response.body.result == true){
-        INFO(`Success ${reqId} ${response.body.accIdLock} ${response.body.nonce} ${response.body.res}`)
+        INFO(`${requestId}: Success ${response.body.accIdx} ${response.body.nonce} ${response.body.res}`)
         return true
       }
     }
 
-    ERROR(`It SHOULD NOT happen! - ${response.body}`)
+    ERROR(JSON.stringify(response, null, 2))
     process.exit(1)
 }
 
 async function eachTest()
 {
-    if (remained > 0) {
-        remained--;
+    if (--remained > 0) {
         let timerId = setTimeout(function() { 
             eachTest();
         }, tickInterval);

@@ -8,21 +8,26 @@ exports.customChain = function (chainId, forkStr='istanbul') {
     return customChain
 }
 
-const ABIHelper = require('../common/abi')
+const ABIHelper = require('./abi')
 const httpRequest = require('request-promise')
 const { Transaction } = require('@ethereumjs/tx')
 const Web3_Utils = require('web3-utils')
 
 let contractAddr = null;
 let gasHex = null
-const transferObj = {
-    "inputs":[{"name": "_to","type": "address"},{"name": "_amount","type": "uint256"}],
-    "name":"transfer",
+const createObj = {
+    "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"},{"name": "_expTimestamp","type": "uint256"}],
+    "name":"createDocument",
     "type":"function"
 }
-const balanceOfObj = {
-    "inputs":[{"name": "_owner","type": "address"}],
-    "name":"balanceOf",
+const checkObj = {
+    "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"}],
+    "name":"checkDocument",
+    "type":"function"
+}
+const getObj = {
+    "inputs":[{"name": "_id","type": "uint256"}],
+    "name":"getDocument",
     "type":"function"
 }
 const request = {
@@ -35,9 +40,9 @@ const request = {
     body: []
 }
 
-exports.setTestEnv = function (_httpRpcUrl, _config, _gas=70000) {
+exports.setTestEnv = function (_httpRpcUrl, _config, _gas=100000) {
 
-    contractAddr = _config.erc20Address
+    contractAddr = _config.docuAddress
     gasHex = Web3_Utils.toHex(_gas);
     request.uri = _httpRpcUrl
     request.headers = _config.httpheaders
@@ -47,7 +52,7 @@ exports.setTestEnv = function (_httpRpcUrl, _config, _gas=70000) {
     }
 }
 
-exports.transferReq = function (senderKey, receiver, nonce, amount=1) {
+exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
 
     const hrTime = process.hrtime()
     const reqId = hrTime[0] * 1000000000 + hrTime[1]
@@ -57,7 +62,7 @@ exports.transferReq = function (senderKey, receiver, nonce, amount=1) {
         gasLimit: gasHex,
         gasPrice: '0x00', // 10 Gwei
         to: contractAddr,
-        data: ABIHelper.getCallDataByABI(transferObj, [`${receiver}`, amount])
+        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${_expTimestamp}`])
     }
     
     // sign the transaction
@@ -113,11 +118,11 @@ const balanceOfBody = {
     params:[],
     id: 0
 }
-exports.balanceOf = function (account) {
+exports.check = function (_id, _fileHash) {
 
     const txData = {
         to: contractAddr,
-        data: ABIHelper.getCallDataByABI(balanceOfObj, [`${account}`])
+        data: ABIHelper.getCallDataByABI(checkObj, [`${_id}`, `${_fileHash}`])
     }
     balanceOfBody.params = [txData, "latest"]
     balanceOfBody.id++
@@ -137,6 +142,38 @@ exports.balanceOf = function (account) {
         })
         .catch(err => {
             console.error(err)
+        })
+    })
+}
+
+exports.get = function (_id) {
+
+    const txData = {
+        to: contractAddr,
+        data: ABIHelper.getCallDataByABI(getObj, [`${_id}`])
+    }
+    balanceOfBody.params = [txData, "latest"]
+    balanceOfBody.id++
+    //console.log(txData)
+    request.body = balanceOfBody
+
+    return new Promise(function(resolve, reject) {
+      httpRequest.post(request)
+        .then(response => {
+            if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
+                resolve(Web3_Utils.hexToNumber(response.body.result))
+            }
+            else {
+                console.error(response)
+                // 초기 상태 검증 => contract 불일치(?)
+                process.exit(2)
+            }
+        })
+        .catch(err => {
+            console.error(err)
+            // 초기 상태 검증 => contract 불일치(?)
+            process.exit(2)
         })
     })
 }

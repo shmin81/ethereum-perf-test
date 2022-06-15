@@ -2,19 +2,17 @@
 const fs = require("fs");
 const path = require("path");
 const Web3 = require('web3')
-const utils = require('../common/utils')
+const utils = require('./utils')
 
 const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
 
 const bytecode = fs.readFileSync(
-	path.join(__dirname, "../contracts/SimpleToken.bin")
-	//path.join(__dirname, "../contracts/EventEmitter.bin")
-	//path.join(__dirname, "../contracts/EventEmitter_sol_EventEmitter.bin")
+	path.join(__dirname, "../contracts/ChainzDoc.bin")
 );
 
 const args = process.argv.slice(2)
 if (args.length != 1) {
-  console.log('node  1.deploy.erc20.contract.js  configPath')
+  console.log('node  1.deploy.doc.contract.js  configPath')
   process.exit(0)
 }
 
@@ -66,7 +64,7 @@ async function run() {
             LOG(` *** send tx - Seccess ***`)
 
 			LOG (` * contractAddress: ${txResults.contractAddress}`)
-			utils.deployNewErc20Contract(txResults.contractAddress, txResults.transactionHash)
+			utils.deployNewDocuContract(txResults.contractAddress, txResults.transactionHash)
         }
 	}
 	catch (err) {

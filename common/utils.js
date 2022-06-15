@@ -78,9 +78,17 @@ exports.convertPrivKeyToAccount = function (privkey) {
         }
 }
 
-exports.deployNewContract = function (contractAddress, transactionHash=null) {
+exports.deployNewErc20Contract = function (contractAddress, transactionHash=null) {
     const confObj = JSON.parse(confContent)
     confObj.erc20Address = contractAddress
+    let outStr = JSON.stringify(confObj, null, 2)
+    fs.writeFileSync(confPath, outStr)
+    // log ??
+}
+
+exports.deployNewDocuContract = function (contractAddress, transactionHash=null) {
+    const confObj = JSON.parse(confContent)
+    confObj.docuAddress = contractAddress
     let outStr = JSON.stringify(confObj, null, 2)
     fs.writeFileSync(confPath, outStr)
     // log ??

@@ -37,7 +37,7 @@ let acountCnt = 0
 let acountLock = 0
 let successCount = 0
 
-let txGasLimit = 70000
+let txGasLimit = 150000
 
 // Express
 const app = express()

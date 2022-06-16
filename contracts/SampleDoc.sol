@@ -58,7 +58,7 @@ contract SampleDoc {
     ) public {
         require( documents[ _id ].isActive == false, "ERROR_DOCUMENT_ID_EXISTS" ) ;
 
-        documentCounts[msg.sender]++;
+        documentCounts[msg.sender] += 1;
 
         documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash ;

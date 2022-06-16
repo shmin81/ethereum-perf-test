@@ -80,7 +80,7 @@ server.listen(port, async () => {
       account.nonceLock = await connection.eth.getTransactionCount(account.sender)
       account.startTxCount = account.nonceLock
 
-      account.docuCnt = await test.getDocCount()
+      account.docuCnt = await test.getDocCount(account.sender)
 
       accounts[i] = account;
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)

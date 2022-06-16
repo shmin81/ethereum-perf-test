@@ -36,7 +36,7 @@ const getDocObj = {
     "type":"function"
 }
 const getDocCntObj = {
-    "inputs":[],
+    "inputs":[{"name": "_owner","type": "address"}],
     "name":"getDocumentCount",
     "type":"function"
 }
@@ -227,11 +227,11 @@ exports.getDoc = function (_id) {
     })
 }
 
-exports.getDocCount = function () {
+exports.getDocCount = function (account) {
 
     const txData = {
         to: contractAddr,
-        data: ABIHelper.getCallDataByABI(getDocCntObj, [])
+        data: ABIHelper.getCallDataByABI(getDocCntObj, [`${account}`])
     }
     callDocuBody.params = [txData, "latest"]
     callDocuBody.id++

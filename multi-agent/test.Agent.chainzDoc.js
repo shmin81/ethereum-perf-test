@@ -81,6 +81,9 @@ server.listen(port, async () => {
       account.startTxCount = account.nonceLock
 
       account.docuCnt = await test.getDocCount(account.sender)
+      if (account.docuCnt == 0) {
+        INFO(`[WARN] No document!! - Need to prepare api beforn test`)
+      }
 
       accounts[i] = account;
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)
@@ -113,7 +116,7 @@ const createDocu = async (req, res) => {
   let id_str = acc.sender + docNum.toString()
   let documentId = Web3Utils.hexToNumberString(id_str)
   let fileHash = '0x' + crypto.createHash('sha256').update(documentId).digest('hex');
-  INFO(`docID: ${documentId} [${id_str}] -> filehash: ${fileHash}`)
+  INFO(`new docID: ${documentId} [${id_str}] -> filehash: ${fileHash}`)
   const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;
 
@@ -157,7 +160,7 @@ const updateDocu = async (req, res) => {
     acountLock = 0;
   }
 	const nonce = accounts[accIdLock].nonceLock++
-  const docNum = accounts[accIdLock].docuCnt  // 마지막 docu만 update?
+  const docNum = accounts[accIdLock].docuCnt - 1  // 마지막 docu만 update?
   const acc = accounts[accIdLock]
   let id_str = acc.sender + docNum.toString()
   let documentId = Web3Utils.hexToNumberString(id_str)
@@ -220,7 +223,7 @@ const serverExit = async (req, res) => {
 
 const router = express.Router()
 router.route('/prepare').post(createDocu)   // createDocument
-router.route('/transfer').post(updateDocu) // updateDocument
+router.route('/transfer').post(updateDocu)  // updateDocument
 router.route('/transferCount').get(transferCount)
 router.route('/serverExit').post(serverExit)
 router.route('/serverExit').get(serverExit)

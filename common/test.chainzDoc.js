@@ -101,14 +101,14 @@ exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
         body: _body
     }
 }
-exports.updateReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
+exports.updateReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp, _gas="0xEA60") {
 
     const hrTime = process.hrtime()
     const reqId = hrTime[0] * 1000000000 + hrTime[1]
 
     const txData = {
         nonce: `${Web3_Utils.toHex(nonce)}`,
-        gasLimit: gasHex,
+        gasLimit: _gas,
         gasPrice: '0x00', // 10 Gwei
         to: contractAddr,
         data: ABIHelper.getCallDataByABI(updateObj, [`${_id}`, `${_fileHash}`, `${_expTimestamp}`])

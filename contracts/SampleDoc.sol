@@ -172,13 +172,12 @@ contract SampleDoc {
         );
     }
 
-    function getDocumentCount()
+    function getDocumentCount(address _owner)
         public
         view
         returns (uint256)
     {
-        uint256 count = documentCounts[msg.sender];
-        return count;
+        return documentCounts[_owner];
     }
     
 }

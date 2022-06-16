@@ -1,9 +1,12 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 /* BMT 기능테스트용 */
-pragma solidity >=0.5.0 <=0.8.4;
+pragma solidity >=0.5.0 <=0.8.18;
 
-contract ChainzDoc {
+// compile with:
+// solcjs SampleDoc.sol --bin --abi --optimize --overwrite -o .
+// solc SampleDoc.sol --evm-version istanbul --bin --abi --optimize --overwrite -o .
 
+contract SampleDoc {
 
     // TO-DO: 문서의 그룹핑이 필요하지 않을까? 예를 들어 인입이 A시스템읹지? B시스템인지?
     struct Document {
@@ -15,9 +18,16 @@ contract ChainzDoc {
         bool    isActive;
     }
 
-    mapping(uint256 => Document) documents ;
+    mapping(uint256 => Document) documents;
+    mapping(address => uint256) documentCounts;
 
     event CreateDocument (
+        uint256 id,
+        address owner,
+        uint256 count
+    );
+
+    event UpdateDocument (
         uint256 id,
         address owner
     );
@@ -48,6 +58,8 @@ contract ChainzDoc {
     ) public {
         require( documents[ _id ].isActive == false, "ERROR_DOCUMENT_ID_EXISTS" ) ;
 
+        documentCounts[msg.sender]++;
+
         documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash ;
         documents[ _id ].regTimestamp = block.timestamp ;
@@ -55,7 +67,25 @@ contract ChainzDoc {
         documents[ _id ].owner = msg.sender ;
         documents[ _id ].isActive = true ;
 
-        emit CreateDocument(_id, msg.sender);
+        emit CreateDocument(_id, msg.sender, documentCounts[msg.sender]);
+    }
+
+    function updateDocument (
+        uint256 _id,
+        bytes32 _fileHash,
+        uint256 _expTimestamp
+    ) public {
+        require( documents[ _id ].isActive == true, "ERROR_DOCUMENT_NOT_EXISTS" ) ;
+        require( documents[ _id ].owner == msg.sender, "NO OWNER" );
+
+        //documents[ _id ].id = _id ;
+        documents[ _id ].fileHash = _fileHash ;
+        documents[ _id ].regTimestamp = block.timestamp ;
+        documents[ _id ].expTimestamp = _expTimestamp ;
+        //documents[ _id ].owner = msg.sender ;
+        //documents[ _id ].isActive = true ;
+
+        emit UpdateDocument(_id, msg.sender);
     }
 
     /**
@@ -128,7 +158,7 @@ contract ChainzDoc {
             bool isActive
         )
     {
-        require( documents[ _id ].isActive == true, "ERROR_DOCUMENT_NOT_EXISTS" ) ;
+        //require( documents[ _id ].isActive == true, "ERROR_DOCUMENT_NOT_EXISTS" ) ;
 
         Document memory document = documents[_id];
 
@@ -142,4 +172,13 @@ contract ChainzDoc {
         );
     }
 
+    function getDocumentCount()
+        public
+        view
+        returns (uint256)
+    {
+        uint256 count = documentCounts[msg.sender];
+        return count;
+    }
+    
 }

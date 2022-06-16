@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0 <=0.8.4;
 
 // compile with:
+// solcjs SimpleToken.sol --bin --abi --optimize --overwrite -o .
 // solc SimpleToken.sol --bin --abi --optimize --overwrite -o .
 
 contract SimpleToken {

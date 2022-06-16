@@ -7,7 +7,7 @@ const utils = require('./utils')
 const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
 
 const bytecode = fs.readFileSync(
-	path.join(__dirname, "../contracts/ChainzDoc.bin")
+	path.join(__dirname, "../contracts/SampleDoc.bin")
 );
 
 const args = process.argv.slice(2)

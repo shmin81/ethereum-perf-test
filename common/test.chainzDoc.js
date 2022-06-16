@@ -20,16 +20,27 @@ const createObj = {
     "name":"createDocument",
     "type":"function"
 }
+const updateObj = {
+    "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"},{"name": "_expTimestamp","type": "uint256"}],
+    "name":"updateDocument",
+    "type":"function"
+}
 const checkObj = {
     "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"}],
     "name":"checkDocument",
     "type":"function"
 }
-const getObj = {
+const getDocObj = {
     "inputs":[{"name": "_id","type": "uint256"}],
     "name":"getDocument",
     "type":"function"
 }
+const getDocCntObj = {
+    "inputs":[],
+    "name":"getDocumentCount",
+    "type":"function"
+}
+
 const request = {
     method: 'POST',
     uri: null,
@@ -90,6 +101,44 @@ exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
         body: _body
     }
 }
+exports.updateReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
+
+    const hrTime = process.hrtime()
+    const reqId = hrTime[0] * 1000000000 + hrTime[1]
+
+    const txData = {
+        nonce: `${Web3_Utils.toHex(nonce)}`,
+        gasLimit: gasHex,
+        gasPrice: '0x00', // 10 Gwei
+        to: contractAddr,
+        data: ABIHelper.getCallDataByABI(updateObj, [`${_id}`, `${_fileHash}`, `${_expTimestamp}`])
+    }
+    
+    // sign the transaction
+    const txObj = Transaction.fromTxData(txData, { common: customChain })
+    //console.log(`tx: ${JSON.stringify(txObj)}`)
+    const signedObj = txObj.sign(senderKey)
+    //console.log(`signed tx: ${JSON.stringify(signedObj)}`)
+    const signedTx = signedObj.serialize().toString('hex')
+
+    // fire away!
+    const _body = {
+        jsonrpc:"2.0",
+        method:"eth_sendRawTransaction",
+        params:[`0x${signedTx}`],
+        id: reqId
+    }
+
+    return {
+        method: 'POST',
+        uri: request.uri,
+        json: true,
+        headers: request.headers,
+        resolveWithFullResponse: true,
+        timeout: 5000,
+        body: _body
+    }
+}
 
 let reqId = 10000
 exports.ethReq = function (method, params=[]) {
@@ -112,7 +161,7 @@ exports.ethReq = function (method, params=[]) {
     }
 }
 
-const balanceOfBody = {
+const callDocuBody = {
     jsonrpc:"2.0",
     method:"eth_call",
     params:[],
@@ -124,10 +173,10 @@ exports.check = function (_id, _fileHash) {
         to: contractAddr,
         data: ABIHelper.getCallDataByABI(checkObj, [`${_id}`, `${_fileHash}`])
     }
-    balanceOfBody.params = [txData, "latest"]
-    balanceOfBody.id++
+    callDocuBody.params = [txData, "latest"]
+    callDocuBody.id++
     //console.log(txData)
-    request.body = balanceOfBody
+    request.body = callDocuBody
 
     return new Promise(function(resolve, reject) {
       httpRequest.post(request)
@@ -137,7 +186,7 @@ exports.check = function (_id, _fileHash) {
                 resolve(Web3_Utils.hexToNumber(response.body.result))
             }
             else {
-                console.error(response)
+                console.error(response.body)
             }
         })
         .catch(err => {
@@ -146,16 +195,48 @@ exports.check = function (_id, _fileHash) {
     })
 }
 
-exports.get = function (_id) {
+exports.getDoc = function (_id) {
 
     const txData = {
         to: contractAddr,
-        data: ABIHelper.getCallDataByABI(getObj, [`${_id}`])
+        data: ABIHelper.getCallDataByABI(getDocObj, [`${_id}`])
     }
-    balanceOfBody.params = [txData, "latest"]
-    balanceOfBody.id++
+    callDocuBody.params = [txData, "latest"]
+    callDocuBody.id++
     //console.log(txData)
-    request.body = balanceOfBody
+    request.body = callDocuBody
+
+    return new Promise(function(resolve, reject) {
+      httpRequest.post(request)
+        .then(response => {
+            if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
+                resolve(response.body.result)
+            }
+            else {
+                console.error(response.body)
+                // 초기 상태 검증 => contract 불일치(?)
+                process.exit(2)
+            }
+        })
+        .catch(err => {
+            console.error(err)
+            // 초기 상태 검증 => contract 불일치(?)
+            process.exit(2)
+        })
+    })
+}
+
+exports.getDocCount = function () {
+
+    const txData = {
+        to: contractAddr,
+        data: ABIHelper.getCallDataByABI(getDocCntObj, [])
+    }
+    callDocuBody.params = [txData, "latest"]
+    callDocuBody.id++
+    //console.log(txData)
+    request.body = callDocuBody
 
     return new Promise(function(resolve, reject) {
       httpRequest.post(request)
@@ -165,7 +246,7 @@ exports.get = function (_id) {
                 resolve(Web3_Utils.hexToNumber(response.body.result))
             }
             else {
-                console.error(response)
+                console.error(response.body)
                 // 초기 상태 검증 => contract 불일치(?)
                 process.exit(2)
             }

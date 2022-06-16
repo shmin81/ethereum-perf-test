@@ -50,7 +50,7 @@ server.listen(port, async () => {
 
   INFO(`Listen on port ${port}!!!`)
   
-  INFO(`Contract: ${conf.erc20Address}`)
+  INFO(`Contract: ${conf.docuAddress}`)
   acountCnt = conf.numberOfAccounts
   
 	const endpointConf = utils.loadJson(conf.endpointfile)
@@ -71,8 +71,6 @@ server.listen(port, async () => {
     test.customChain(chainId)
     test.setTestEnv(httpRpcUrl, conf, txGasLimit)
 
-    // 조회 테스트
-    await test.get(0)
 
     for (let i=0; i<acountCnt; i++) {
 
@@ -81,6 +79,8 @@ server.listen(port, async () => {
 
       account.nonceLock = await connection.eth.getTransactionCount(account.sender)
       account.startTxCount = account.nonceLock
+
+      account.docuCnt = await test.getDocCount()
 
       accounts[i] = account;
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)
@@ -100,27 +100,70 @@ server.on('error', (error) => {
 //let documentId = 1
 //let fileHash = '0x724ad11f03ec789913d203e50bbf4f8ebe391c71d9aad551fbb55e42c69ff814'
 let expiredDate = Math.floor(+ new Date() / 1000) + 365 * 24 * 60 * 60 // 1년 후?
-const transfer = async (req, res) => {
- 
-  let ps = req.body.params
-  let nonceOffset = 0
-  //console.log('request params:', ps.length, ps)
-  if (Array.isArray(ps) && ps.length > 0) {
-    nonceOffset = Number(ps[0])
-    INFO(`params[0] nonce offset: ${nonceOffset} from [${ps[0]} ${typeof(ps[0])}]`)
-  }
 
+const createDocu = async (req, res) => {
+ 
   const accIdLock = acountLock++
   if (acountLock == acountCnt) {
     acountLock = 0;
   }
-	const nonce = nonceOffset + accounts[accIdLock].nonceLock++
+	const nonce = accounts[accIdLock].nonceLock++
+  const docNum = accounts[accIdLock].docuCnt++
   const acc = accounts[accIdLock]
-  let id_str = acc.sender + nonce.toString()
+  let id_str = acc.sender + docNum.toString()
   let documentId = Web3Utils.hexToNumberString(id_str)
-  let fileHash = crypto.createHash('sha256').update(documentId).digest('hex');
+  let fileHash = '0x' + crypto.createHash('sha256').update(documentId).digest('hex');
+  INFO(`docID: ${documentId} [${id_str}] -> filehash: ${fileHash}`)
+  const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
+  const reqId = request.body.id;
 
-  const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate)
+  let sendTime = (new Date()).toISOString()
+  httpRequest.post(request)
+    .then(response => {
+      try {
+        if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
+          const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
+          INFO(`Success! - ${JSON.stringify(output)}`)
+          res.status(200)
+          res.set('Content-Type', 'application/json;charset=utf8')
+          res.json(output)
+          successCount++
+        } else {
+          // console.dir(response)
+          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error, id: reqId }
+          ERROR(`Need check! - ${JSON.stringify(output)}`)
+          res.status(500)
+          res.set('Content-Type', 'application/json;charset=utf8')
+          res.json(output)
+        }
+      } catch (err) {
+        ERROR(`It SHOULD NOT happen! - ${err}`)
+        //process.exit(1)
+      }
+    })
+    .catch(err => {
+      const output = { result: false, accIdx: accIdLock, nonce, res: `NA`, id: reqId, error: `${err}` }
+      ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
+      res.status(500)
+      res.set('Content-Type', 'application/json;charset=utf8')
+      res.json(output)
+    })
+}
+
+const updateDocu = async (req, res) => {
+ 
+  const accIdLock = acountLock++
+  if (acountLock == acountCnt) {
+    acountLock = 0;
+  }
+	const nonce = accounts[accIdLock].nonceLock++
+  const docNum = accounts[accIdLock].docuCnt  // 마지막 docu만 update?
+  const acc = accounts[accIdLock]
+  let id_str = acc.sender + docNum.toString()
+  let documentId = Web3Utils.hexToNumberString(id_str)
+  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + Web3Utils.numberToHex(nonce)).digest('hex');
+  INFO(`docID: ${documentId} [${id_str}] -> filehash: ${fileHash}`)
+  const request = test.updateReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;
 
   let sendTime = (new Date()).toISOString()
@@ -176,7 +219,8 @@ const serverExit = async (req, res) => {
 }
 
 const router = express.Router()
-router.route('/transfer').post(transfer)
+router.route('/prepare').post(createDocu)   // createDocument
+router.route('/transfer').post(updateDocu) // updateDocument
 router.route('/transferCount').get(transferCount)
 router.route('/serverExit').post(serverExit)
 router.route('/serverExit').get(serverExit)

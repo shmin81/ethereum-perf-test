@@ -10,15 +10,21 @@ const INFO = (msg) => console.log(`${new Date().toISOString()} [INFO] ${msg}`)
 const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}`)
 
 const args = process.argv.slice(2)
-let confPath = null
-if (args.length == 1) {
-  confPath = args[0]
+if (args.length == 0) {
+  ERROR('need configPath [ testAgentScriptPath (default: ./test.Agent.erc20.js)]')
+  INFO(`$ node controlAgent.js ../configs/local.cbdc.test.json ./test.Agent.chainzDoc.js`)
 }
-else {
-  ERROR('need configPath')
-  INFO(`$ node controlAgent.js ../configs/local.cbdc.test.json`)
-}
+const confPath = args[0]
 const conf = utils.loadConf(confPath)
+
+let nodeScript = './test.Agent.erc20.js'
+if (args[1] != undefined && args[1] != null) {
+  nodeScript = args[1]
+}
+if (fs.existsSync(nodeScript) == false) {
+  console.error(`Not found '${nodeScript}'`)
+  process.exit(2)
+}
 
 // ethereum node 
 const endpointConf =  utils.loadJson(conf.endpointfile)
@@ -34,8 +40,6 @@ if ( minerCnt * conf.numberOfAccounts + conf.startAccountIdx > accountCnt) {
   ERROR(`account 개수 부족 (${minerCnt * conf.numberOfAccounts + conf.startAccountIdx}개의 계정셋이 필요함)`)
   process.exit(1)
 }
-
-const nodeScript = './test.Agent.erc20.js'
 
 let runningTask = 0
 let childs = []

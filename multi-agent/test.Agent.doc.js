@@ -9,15 +9,20 @@ const Web3Utils = require('web3-utils');
 const crypto = require('crypto');
 
 const utils = require('../common/utils')
-const test = require('../common/test.chainzDoc')
+const test = require('../common/test.doc')
 
 const INFO = (msg) => console.log(msg)
 const ERROR = (msg) => console.error(msg)
+const DEBUG = (msg) => {
+  if (debugMode) {
+    fs.appendFileSync(debugLog, msg)
+  }
+}
 
 // Environment variables
 const args = process.argv.slice(2)
 if (args.length < 3) {
-  console.log('node  test.Agent.chainzDoc.js  portNumber  minerIdx  accountStartIdx configPath')
+  console.log('node  test.Agent.chainzDoc.js  portNumber  minerIdx  accountStartIdx configPath [ debug(false) ]')
   process.exit(0)
 }
 const port = Number(args[0])
@@ -25,11 +30,17 @@ const minerIdx = Number(args[1])
 const startIdx = Number(args[2])
 
 // Configurations from file
-let confPath = null
-if (args.length == 4) {
-  confPath = args[3]
-}
+const confPath = args[3]
 const conf = utils.loadConf(confPath)
+
+let debugLog = `./test.doc.node${minerIdx}.log`
+let debugMode = false
+if (args.length == 5) {
+  if (args[4]) {
+    debugMode = true
+    fs.writeFileSync(debugLog, `${new Date().toISOString()} [INFO] ${port} ${minerIdx} ${startIdx} ${confPath}\n`)
+  }
+}
 
 // In-memory status
 let accounts = {}
@@ -49,13 +60,11 @@ const server = http.createServer(app);
 server.listen(port, async () => {
 
   INFO(`Listen on port ${port}!!!`)
-  
-  INFO(`Contract: ${conf.docuAddress}`)
   acountCnt = conf.numberOfAccounts
   
 	const endpointConf = utils.loadJson(conf.endpointfile)
   httpRpcUrl = endpointConf[minerIdx]
-  INFO(`RPC: ${httpRpcUrl}`)
+  INFO(`RPC: ${httpRpcUrl}, Contract: ${conf.docuAddress}`)
 
   // account
 	const accountConf = utils.loadJson(conf.accountfile)
@@ -113,10 +122,15 @@ const createDocu = async (req, res) => {
 	const nonce = accounts[accIdLock].nonceLock++
   const docNum = accounts[accIdLock].docuCnt++
   const acc = accounts[accIdLock]
-  let id_str = acc.sender + docNum.toString()
-  let documentId = Web3Utils.hexToNumberString(id_str)
-  let fileHash = '0x' + crypto.createHash('sha256').update(documentId).digest('hex');
-  INFO(`new docID: ${documentId} [${id_str}] -> filehash: ${fileHash}`)
+  
+  let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
+  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
+  if (debugMode) {
+    DEBUG(`create docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}\n`)
+  }
+  else {
+    INFO(`new docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
+  }
   const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;
 
@@ -133,7 +147,7 @@ const createDocu = async (req, res) => {
           successCount++
         } else {
           // console.dir(response)
-          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error, id: reqId }
+          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error }
           ERROR(`Need check! - ${JSON.stringify(output)}`)
           res.status(500)
           res.set('Content-Type', 'application/json;charset=utf8')
@@ -145,7 +159,7 @@ const createDocu = async (req, res) => {
       }
     })
     .catch(err => {
-      const output = { result: false, accIdx: accIdLock, nonce, res: `NA`, id: reqId, error: `${err}` }
+      const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}` }
       ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
       res.status(500)
       res.set('Content-Type', 'application/json;charset=utf8')
@@ -162,10 +176,12 @@ const updateDocu = async (req, res) => {
 	const nonce = accounts[accIdLock].nonceLock++
   const docNum = accounts[accIdLock].docuCnt - 1  // 마지막 docu만 update?
   const acc = accounts[accIdLock]
-  let id_str = acc.sender + docNum.toString()
-  let documentId = Web3Utils.hexToNumberString(id_str)
-  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + Web3Utils.numberToHex(nonce)).digest('hex');
-  INFO(`docID: ${documentId} [${id_str}] -> filehash: ${fileHash}`)
+
+  let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
+  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
+  if (debugMode) {
+    DEBUG(`update docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}\n`)
+  }
   const request = test.updateReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;
 
@@ -182,7 +198,7 @@ const updateDocu = async (req, res) => {
           successCount++
         } else {
           // console.dir(response)
-          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error, id: reqId }
+          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error }
           ERROR(`Need check! - ${JSON.stringify(output)}`)
           res.status(500)
           res.set('Content-Type', 'application/json;charset=utf8')
@@ -194,7 +210,7 @@ const updateDocu = async (req, res) => {
       }
     })
     .catch(err => {
-      const output = { result: false, accIdx: accIdLock, nonce, res: `NA`, id: reqId, error: `${err}` }
+      const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}` }
       ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
       res.status(500)
       res.set('Content-Type', 'application/json;charset=utf8')

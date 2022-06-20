@@ -12,7 +12,7 @@ const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}
 const args = process.argv.slice(2)
 if (args.length == 0) {
   ERROR('need configPath [ testAgentScriptPath (default: ./test.Agent.erc20.js)]')
-  INFO(`$ node controlAgent.js ../configs/local.cbdc.test.json ./test.Agent.chainzDoc.js`)
+  INFO(`$ node controlAgent.js ../configs/local.cbdc.test.json ./test.Agent.doc.js`)
 }
 const confPath = args[0]
 const conf = utils.loadConf(confPath)

@@ -2,7 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 const Web3 = require('web3')
-const utils = require('../common/utils')
+const utils = require('./utils')
 
 const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
 
@@ -14,7 +14,7 @@ const bytecode = fs.readFileSync(
 
 const args = process.argv.slice(2)
 if (args.length != 1) {
-  console.log('node  1.deploy.erc20.contract.js  configPath')
+  console.log('node  1.1.deploy.erc20.contract.js  configPath')
   process.exit(0)
 }
 

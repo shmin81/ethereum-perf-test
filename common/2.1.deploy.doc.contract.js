@@ -12,7 +12,7 @@ const bytecode = fs.readFileSync(
 
 const args = process.argv.slice(2)
 if (args.length != 1) {
-  console.log('node  1.deploy.doc.contract.js  configPath')
+  console.log('node  2.1.deploy.doc.contract.js  configPath')
   process.exit(0)
 }
 

@@ -211,7 +211,18 @@ exports.getDoc = function (_id) {
         .then(response => {
             if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
                 //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
-                resolve(response.body.result)
+                let resStr = response.body.result
+                console.log(resStr)
+                let docObj = {
+                    id: Web3_Utils.hexToNumberString(resStr.substring(0, 2+64)),
+                    filehash: '0x'+resStr.substring(2+64, 2+64*2),
+                    regTimestamp:  Web3_Utils.hexToNumber('0x'+resStr.substring(2+64*2, 2+64*3)),
+                    expiredTime:  Web3_Utils.hexToNumber('0x'+resStr.substring(2+64*3, 2+64*4)),
+                    owner: '0x'+resStr.substring(26+64*4, 2+64*5),
+                    actived: Number(resStr.substring(2+64*5, 2+64*6))
+                }
+                resolve(docObj)
+                // resolve(response.body.result)
             }
             else {
                 console.error(response.body)

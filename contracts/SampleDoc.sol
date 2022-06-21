@@ -20,6 +20,7 @@ contract SampleDoc {
 
     mapping(uint256 => Document) documents;
     mapping(address => uint256) documentCounts;
+    mapping(uint256 => uint256) documentUpdateCounts;
 
     event CreateDocument (
         uint256 id,
@@ -29,7 +30,8 @@ contract SampleDoc {
 
     event UpdateDocument (
         uint256 id,
-        address owner
+        address owner,
+        uint256 count
     );
 
     event DeleteDocument (
@@ -76,16 +78,16 @@ contract SampleDoc {
         uint256 _expTimestamp
     ) public {
         require( documents[ _id ].isActive == true, "ERROR_DOCUMENT_NOT_EXISTS" ) ;
-        require( documents[ _id ].owner == msg.sender, "NO OWNER" );
+        require( documents[ _id ].owner == msg.sender, "WRONG OWNER" );
+        require( documents[ _id ].expTimestamp >= block.timestamp, "ERROR_DOCUMENT_EXPIRED" );
 
-        //documents[ _id ].id = _id ;
+        documentUpdateCounts[ _id ] += 1 ;
+
         documents[ _id ].fileHash = _fileHash ;
         documents[ _id ].regTimestamp = block.timestamp ;
         documents[ _id ].expTimestamp = _expTimestamp ;
-        //documents[ _id ].owner = msg.sender ;
-        //documents[ _id ].isActive = true ;
 
-        emit UpdateDocument(_id, msg.sender);
+        emit UpdateDocument(_id, msg.sender, documentUpdateCounts[ _id ]);
     }
 
     /**

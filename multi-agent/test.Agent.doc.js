@@ -14,8 +14,11 @@ const test = require('../common/test.doc')
 const INFO = (msg) => console.log(msg)
 const ERROR = (msg) => console.error(msg)
 const DEBUG = (msg) => {
-  if (debugMode) {
-    fs.appendFileSync(debugLog, msg)
+  if (saveLog) {
+    fs.appendFileSync(debugLog, msg+'\n')
+  }
+  else {
+    console.log(msg)
   }
 }
 
@@ -34,10 +37,10 @@ const confPath = args[3]
 const conf = utils.loadConf(confPath)
 
 let debugLog = `./test.doc.node${minerIdx}.log`
-let debugMode = false
+let saveLog = false
 if (args.length == 5) {
   if (args[4]) {
-    debugMode = true
+    saveLog = true
     fs.writeFileSync(debugLog, `${new Date().toISOString()} [INFO] ${port} ${minerIdx} ${startIdx} ${confPath}\n`)
   }
 }
@@ -48,7 +51,7 @@ let acountCnt = 0
 let acountLock = 0
 let successCount = 0
 
-let txGasLimit = 150000
+let txGasLimit = 150000  // createDocument API
 
 // Express
 const app = express()
@@ -122,25 +125,22 @@ const createDocu = async (req, res) => {
 	const nonce = accounts[accIdLock].nonceLock++
   const docNum = accounts[accIdLock].docuCnt++
   const acc = accounts[accIdLock]
-  
+
   let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
   let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
-  if (debugMode) {
-    DEBUG(`create docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}\n`)
-  }
-  else {
-    INFO(`new docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
-  }
+  DEBUG(`create docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
+  
   const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;
 
-  let sendTime = (new Date()).toISOString()
+  let sendTime = new Date()
   httpRequest.post(request)
     .then(response => {
       try {
         if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
           const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
-          INFO(`Success! - ${JSON.stringify(output)}`)
+          //INFO(`Success! - ${JSON.stringify(output)}`)
+          DEBUG(`${sendTime.valueOf()} ${response.body.result}`)
           res.status(200)
           res.set('Content-Type', 'application/json;charset=utf8')
           res.json(output)
@@ -178,20 +178,19 @@ const updateDocu = async (req, res) => {
   const acc = accounts[accIdLock]
 
   let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
-  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
-  if (debugMode) {
-    DEBUG(`update docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}\n`)
-  }
+  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex')
+  DEBUG(`update docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
   const request = test.updateReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;
 
-  let sendTime = (new Date()).toISOString()
+  let sendTime = new Date()
   httpRequest.post(request)
     .then(response => {
       try {
         if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
           const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
-          INFO(`Success! - ${JSON.stringify(output)}`)
+          //INFO(`Success! - ${JSON.stringify(output)}`)
+          DEBUG(`${sendTime.valueOf()} ${response.body.result}`)
           res.status(200)
           res.set('Content-Type', 'application/json;charset=utf8')
           res.json(output)

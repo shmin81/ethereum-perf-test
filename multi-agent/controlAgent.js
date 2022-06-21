@@ -11,8 +11,8 @@ const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}
 
 const args = process.argv.slice(2)
 if (args.length == 0) {
-  ERROR('need configPath [ testAgentScriptPath (default: ./test.Agent.erc20.js)]')
-  INFO(`$ node controlAgent.js ../configs/local.cbdc.test.json ./test.Agent.doc.js`)
+  ERROR('need configPath [ testAgentScriptPath(./test.Agent.erc20.js) saveLog (false) ]')
+  INFO(`$ node controlAgent.js ../configs/local.cbdc.test.json ./test.Agent.doc.js true`)
 }
 const confPath = args[0]
 const conf = utils.loadConf(confPath)
@@ -24,6 +24,11 @@ if (args[1] != undefined && args[1] != null) {
 if (fs.existsSync(nodeScript) == false) {
   console.error(`Not found '${nodeScript}'`)
   process.exit(2)
+}
+
+let saveLog = false
+if (args[2] != undefined) {
+  saveLog = args[2] == true ? true : false
 }
 
 // ethereum node 
@@ -46,9 +51,9 @@ let childs = []
 function newProcess(id, portNum, minerIdx, accountIdx) {
   runningTask++;
   //INFO(`=========================================================`);
-  INFO(`[${id}] new test process => node ${nodeScript} ${portNum} ${minerIdx} ${accountIdx} ${confPath}\n`);
+  INFO(`[${id}] new test process => node ${nodeScript} ${portNum} ${minerIdx} ${accountIdx} ${confPath} ${saveLog}\n`);
 
-  let process2 = spawn("node", [ nodeScript, portNum, minerIdx, accountIdx, confPath ]);
+  let process2 = spawn("node", [ nodeScript, portNum, minerIdx, accountIdx, confPath, saveLog ]);
   childs.push(process2)
   
   process2.stderr.on('data', function(data) {

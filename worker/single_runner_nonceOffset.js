@@ -1,7 +1,6 @@
 
 const fs = require("fs");
 const httpRequest = require('request-promise')
-const utils = require('../common/utils')
 
 // const INFO = (msg) => console.log(`${new Date().toISOString()} [INFO] ${msg}`)
 const INFO = (msg) => console.log(`[INFO] ${msg}`)
@@ -11,44 +10,31 @@ const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}
 const confPath = 'interval.txt'
 const intervalOffset = 2
 
-let agent_ip = 'localhost'
 let remained=100000000000
 let tickInterval = 1000
-let apiName = 'transfer'
+let param = []
 
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
-    console.log('Wrong input params - "config-path" [ "agent_ip(localhost)" "Interval(1000 ms)" "MaxCount(100,000,000,000)" "apiName(transfer)" ]');
-    console.log('  ex) node multi_runner.js ../configs/local.cbdc.test.json localhost 500 1000');
+    console.log('Wrong input params - "http url" [ "Interval(1000 ms)" "MaxCount(100,000,000,000)" "param[0](nonceOffset=0)" ]');
+    console.log('  ex) node single_runner.js localhost:10080 500 1000');
     process.exit(2); 
 }
 
-const configPath = args[0]
+let httpRpcUrl = `http://${args[0]}/transfer`
+INFO(`rpc: ${httpRpcUrl}`)
+
 if (args[1] != undefined) {
-    agent_ip = args[1]
+    tickInterval = parseInt(args[1])
 }
 if (args[2] != undefined) {
-    tickInterval = Number(args[2])
+    remained = parseInt(args[2])
 }
 if (args[3] != undefined) {
-    remained = Number(args[3])
+    param.push(args[3])
 }
-if (args[4] != undefined) {
-    apiName = String(args[4])
-}
-INFO(`test option => Interval:${tickInterval}, Tx:${remained}, apiName:${apiName}`)
+INFO(`test option => Interval:${tickInterval}, Tx:${remained}, nonceOffset:${param}`)
 //const maxCnt = remained
-
-const conf = utils.loadConf(configPath)
-
-// ethereum node 
-const endpointConf =  utils.loadJson(conf.endpointfile)
-const minerCnt = endpointConf.length
-INFO(`num of nodes: ${minerCnt}`)
-let rpcUrls = []
-for (let i=0; i<minerCnt; i++) {
-    rpcUrls.push(`http://${agent_ip}:${conf.startPortNumber+i}/${apiName}`)
-}
 
 fs.writeFileSync(confPath, (tickInterval).toString());
 tickInterval -= intervalOffset
@@ -87,13 +73,13 @@ function updateStatus() {
 const body = {
     jsonrpc: "2.0",
     method: "transfer",
-    params: [],
+    params: param,
     id: 0
 }
 
 const request = {
     method: 'POST',
-    uri: 'http',
+    uri: httpRpcUrl,
     json: true,
     headers: {'Content-Type': 'application/json'},
     resolveWithFullResponse: true,
@@ -101,14 +87,9 @@ const request = {
     body: {}
 }
 let reqId = 0
-let rpcIdx = 0
 async function sendhttp() {
-     if (rpcIdx == minerCnt) {
-        rpcIdx = 0
-    }
     let requestId = reqId++
-    body.id = requestId
-    request.uri = rpcUrls[rpcIdx++]
+    body.id = requestId 
     request.body = body
     //INFO(JSON.stringify(request, null, 2))
     let response = await httpRequest.post(request)

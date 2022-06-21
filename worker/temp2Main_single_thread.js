@@ -14,11 +14,13 @@ let agent_ip = 'localhost'
 let remained = 600
 let targetTps = 100
 let tickInterval = 1000
+let apiName = 'transfer'
 
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
-    console.log('Wrong input params - "config-path" [ "agent_ip(localhost)" "tps(100tps)" "TestTime(600s)" ]');
+    console.log('Wrong input params - "config-path" [ "agent_ip(localhost)" "tps(100tps)" "TestTime(600s)"  "api(transfer)" ]');
     console.log('  ex) node temp2Main_single_thread.js ../configs/local.cbdc.test.json localhost 200 60');
+    console.log('  ex) node temp2Main_single_thread.js ../configs/local.cbdc.test.json localhost 100 30 prepare');
     process.exit(2); 
 }
 
@@ -27,10 +29,13 @@ if (args[1] != undefined) {
     agent_ip = args[1]
 }
 if (args[2] != undefined) {
-    targetTps = parseInt(args[2])
+    targetTps = Number(args[2])
 }
 if (args[3] != undefined) {
-    remained = parseInt(args[3])
+    remained = Number(args[3])
+}
+if (args[4] != undefined) {
+    apiName = String(args[4])
 }
 
 INFO(`test option => target: ${agent_ip}, targetTps: ${targetTps} tps, testTime: ${remained} seconds`)
@@ -43,7 +48,7 @@ const minerCnt = endpointConf.length
 INFO(`num of nodes: ${minerCnt}`)
 let rpcUrls = []
 for (let i=0; i<minerCnt; i++) {
-    rpcUrls.push(`http://${agent_ip}:${conf.startPortNumber+i}/transfer`)
+    rpcUrls.push(`http://${agent_ip}:${conf.startPortNumber+i}/${apiName}`)
 }
 tickInterval = Math.floor(1000 * minerCnt / targetTps) 
 if (tickInterval - intervalOffset < 2) {

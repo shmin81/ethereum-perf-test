@@ -12,29 +12,28 @@ const intervalOffset = 2
 
 let remained=100000000000
 let tickInterval = 1000
-let param = []
+let apiName = 'transfer'
 
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
-    console.log('Wrong input params - "http url" [ "Interval(1000 ms)" "MaxCount(100,000,000,000)" "param[0](nonceOffset=0)" ]');
+    console.log('Wrong input params - "http url" [ "Interval(1000 ms)" "MaxCount(100,000,000,000)"  "api(transfer)" ]');
     console.log('  ex) node single_runner.js localhost:10080 500 1000');
     process.exit(2); 
 }
 
-let httpRpcUrl = `http://${args[0]}/transfer`
-INFO(`rpc: ${httpRpcUrl}`)
-
 if (args[1] != undefined) {
-    tickInterval = parseInt(args[1])
+    tickInterval = Number(args[1])
 }
 if (args[2] != undefined) {
-    remained = parseInt(args[2])
+    remained = Number(args[2])
 }
 if (args[3] != undefined) {
-    param.push(args[3])
+    apiName = String(args[3])
 }
-INFO(`test option => Interval:${tickInterval}, Tx:${remained}, nonceOffset:${param}`)
-//const maxCnt = remained
+INFO(`test option => Interval:${tickInterval}, Tx:${remained}`)
+
+let httpRpcUrl = `http://${args[0]}/${apiName}`
+INFO(`rpc: ${httpRpcUrl}`)
 
 fs.writeFileSync(confPath, (tickInterval).toString());
 tickInterval -= intervalOffset
@@ -73,7 +72,7 @@ function updateStatus() {
 const body = {
     jsonrpc: "2.0",
     method: "transfer",
-    params: param,
+    params: [],
     id: 0
 }
 

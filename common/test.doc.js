@@ -212,7 +212,7 @@ exports.getDoc = function (_id) {
             if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
                 //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
                 let resStr = response.body.result
-                console.log(resStr)
+                //console.log(resStr)
                 let docObj = {
                     id: Web3_Utils.hexToNumberString(resStr.substring(0, 2+64)),
                     filehash: '0x'+resStr.substring(2+64, 2+64*2),

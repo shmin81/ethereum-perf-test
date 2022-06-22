@@ -38,8 +38,8 @@ async function init() {
 async function run() {
     let resultStrLog = 'documents of each user\n'
     const acountCnt = accountConf.length
-    LOG(`Account Count: ${acountCnt}`)
-    LOG('***** get document count *****')
+    LOG(`Account Count: ${acountCnt}\n`)
+    //LOG('***** get document count *****')
     for (let i=0; i<acountCnt; i++) {
         const acc = accountConf[i]
         response = await test.getDocCount(acc.sender)

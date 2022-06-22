@@ -13,6 +13,7 @@ if (args[0] == undefined || args[0].indexOf('help') != -1) {
 }
 
 const resultPath = './verify.tx.latency.results.log'
+const refPath = './verify.tx.latency.ref.log'
 
 const confPath = args[0]
 const conf = utils.loadConf(confPath)
@@ -40,9 +41,16 @@ function init() {
     }
 }
 
+let map = new Map();
 async function run() {
     LOG('  =======  run  =======')
     let results = null
+    let maxOffset = 1
+    let minOffset = 1000
+
+    let success = 0
+    let failed = 0
+    let reverted = 0 
     
     try {
         for (let i=1; i<lines.length; i++) {
@@ -63,13 +71,31 @@ async function run() {
             let txResults = await web3.eth.getTransactionReceipt(transactionHash)
             if (txResults == undefined || txResults == null) {
                 LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
+                failed++
             }
             else {
                 LOG(`eth_getTransactionReceipt(${transactionHash}) => ${JSON.stringify(txResults)}`)
                 if (txResults.status == true) {
                     LOG(` *** send tx - Seccess ***`)
-                    results = await web3.eth.getBlock(txResults.blockHash)
-                    let timeOffset = results.timestamp * 1000 - Number(txInfos[0])
+                    success++
+
+                    let settleTime = 0
+                    if (map.has(txResults.blockNumber) == false) {
+                        results = await web3.eth.getBlock(txResults.blockHash)
+                        settleTime = results.timestamp * 1000
+                        map.set(txResults.blockNumber, settleTime)
+                    }
+                    else {
+                        settleTime = map.get(txResults.blockNumber)
+                    }
+
+                    let timeOffset = settleTime - Number(txInfos[0])
+                    if (timeOffset > maxOffset) {
+                        maxOffset = timeOffset
+                    }
+                    if (timeOffset < minOffset) {
+                        minOffset = timeOffset
+                    }
                     //let outOffset = parseInt(timeOffset * 1000)
                     // sendTime, blockTime, 반영시간, txid ?
                     fs.appendFileSync(resultPath, `${txInfos[0]} ${results.timestamp}000 ${timeOffset} ${transactionHash}\n`)
@@ -77,9 +103,19 @@ async function run() {
                 else {
                     LOG(` *** send tx - Reverted ***`)
                     // Why ??
+                    reverted++
                 }
             }
         }
+
+        LOG(`==================================`)
+        let refStr = `[tx]  success: ${success}  reverted: ${reverted}  deleted: ${failed}\n`
+        refStr += `[latency]  min: ${minOffset}  max: ${maxOffset}`
+        LOG(refStr)
+        
+        fs.appendFileSync(refPath, `*** ${resultPath} ***\n`)
+        fs.appendFileSync(refPath, refStr +'\n')
+
     }
     catch (err) {
 		LOG(err); 

@@ -51,7 +51,7 @@ const request = {
     body: []
 }
 
-exports.setTestEnv = function (_httpRpcUrl, _config, _gas=100000) {
+exports.setTestEnv = function (_httpRpcUrl, _config, _gas=200000) {
 
     contractAddr = _config.docuAddress
     gasHex = Web3_Utils.toHex(_gas);
@@ -101,14 +101,14 @@ exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
         body: _body
     }
 }
-exports.updateReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp, _gas="0xEA60") {
+exports.updateReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp, _gasHex="0x186A0") {
 
     const hrTime = process.hrtime()
     const reqId = hrTime[0] * 1000000000 + hrTime[1]
 
     const txData = {
         nonce: `${Web3_Utils.toHex(nonce)}`,
-        gasLimit: _gas,
+        gasLimit: _gasHex,
         gasPrice: '0x00', // 10 Gwei
         to: contractAddr,
         data: ABIHelper.getCallDataByABI(updateObj, [`${_id}`, `${_fileHash}`, `${_expTimestamp}`])

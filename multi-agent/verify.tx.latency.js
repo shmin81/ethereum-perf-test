@@ -15,6 +15,7 @@ if (args[0] == undefined || args[0].indexOf('help') != -1) {
 const resultPath = './verify.tx.latency.results.log'
 const refPath = './verify.tx.latency.ref.log'
 const simplePath = './verify.tx.latency.res.simple.log'
+const simplePath2 = './verify.tx.latency.res.simple2.log'
 
 const confPath = args[0]
 const conf = utils.loadConf(confPath)
@@ -28,6 +29,7 @@ let lines = null
 let web3
 
 let timeMap = new Map();
+let timeMap2 = new Map();
 let simpleTimeOffset = 0
 
 function init() {
@@ -59,9 +61,22 @@ function init() {
             timeMap.set(`${txInfos[1]} ${txInfos[2]}`, parseInt(txInfos[3]))
         }
     }
+    if (fs.existsSync(simplePath2) == true) {
+        LOG('loading...')
+        let simContents = fs.readFileSync(simplePath2).toString()
+        let simLines = simContents.split(/\r\n|\n/)
+        let allLines = simLines.length
+        simpleTimeOffset = parseInt(simLines[0])
+        for (let i=2; i<allLines; i++) {
+            const lineStr = simLines[i]
+            let txInfos = lineStr.split(' ')
+            timeMap2.set(`${txInfos[1]} ${txInfos[2]}`, parseInt(txInfos[3]))
+        }
+    }
 }
 
 let map = new Map();
+let map2 = new Map();
 async function run() {
     LOG('  =======  run  =======')
     let results = null
@@ -138,6 +153,18 @@ async function run() {
                         let cntValue = timeMap.get(timeStr)
                         timeMap.set(timeStr, cntValue+1)
                     }
+
+                    let stx2 = parseInt(stx / 10)
+                    let etx2 = parseInt(etx / 10)
+
+                    let timeStr2 = `${stx2} ${etx2}`
+                    if (timeMap2.has(timeStr2) == false) {
+                        timeMap2.set(timeStr2, 1)
+                    }
+                    else {
+                        let cntValue2 = timeMap2.get(timeStr2)
+                        timeMap2.set(timeStr2, cntValue2+1)
+                    }
                 }
                 else {
                     console.log(` *** send tx - Reverted ***`)
@@ -162,8 +189,18 @@ async function run() {
             saveStr += `${cnt++} ${key} ${value}\n`
         }
         LOG('saving...(overwriting)')
-        fs.writeFileSync(resultPath, `${simpleTimeOffset}\nidx sTime eTime counts\n`)
+        fs.writeFileSync(simplePath, `${simpleTimeOffset}\nidx sTime eTime counts\n`)
         fs.appendFileSync(simplePath, saveStr)
+
+        cnt = 1
+        saveStr = ''
+        for (let [key, value] of timeMap2) {
+            saveStr += `${cnt++} ${key} ${value}\n`
+        }
+        LOG('saving...(overwriting)')
+        fs.writeFileSync(simplePath2, `${simpleTimeOffset}\nidx sTime eTime counts\n`)
+        fs.appendFileSync(simplePath2, saveStr)
+
     }
     catch (err) {
 		LOG(err); 

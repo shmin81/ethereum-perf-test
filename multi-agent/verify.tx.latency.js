@@ -53,7 +53,7 @@ function init() {
         LOG('loading...')
         let simContents = fs.readFileSync(simplePath).toString()
         let simLines = simContents.split(/\r\n|\n/)
-        let allLines = simLines.length
+        let allLines = simLines.length - 1
         simpleTimeOffset = parseInt(simLines[0])
         for (let i=2; i<allLines; i++) {
             const lineStr = simLines[i]
@@ -65,7 +65,7 @@ function init() {
         LOG('loading...')
         let simContents = fs.readFileSync(simplePath2).toString()
         let simLines = simContents.split(/\r\n|\n/)
-        let allLines = simLines.length
+        let allLines = simLines.length - 1
         simpleTimeOffset = parseInt(simLines[0])
         for (let i=2; i<allLines; i++) {
             const lineStr = simLines[i]
@@ -76,7 +76,6 @@ function init() {
 }
 
 let map = new Map();
-let map2 = new Map();
 async function run() {
     LOG('  =======  run  =======')
     let results = null

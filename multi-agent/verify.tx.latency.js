@@ -14,14 +14,22 @@ if (args[0] == undefined || args[0].indexOf('help') != -1) {
 
 const resultPath = './verify.tx.latency.results.log'
 const refPath = './verify.tx.latency.ref.log'
+const simplePath = './verify.tx.latency.res.simple.log'
 
 const confPath = args[0]
 const conf = utils.loadConf(confPath)
 const transactionLogPath = args[1]
 
+fs.appendFileSync(refPath, `\n*** ${new Date().toISOString()} ***\n`)
+fs.appendFileSync(refPath, `*** ${transactionLogPath} ***\n`)
+
 let httpRpcUrl = ''
 let lines = null
 let web3
+
+let timeMap = new Map();
+let simpleTimeOffset = 0
+
 function init() {
 
 	LOG(JSON.stringify(conf))
@@ -39,6 +47,18 @@ function init() {
     if (fs.existsSync(resultPath) == false) {
         fs.writeFileSync(resultPath, `sendTime blockTime timeOffset txid\n`)
     }
+    if (fs.existsSync(simplePath) == true) {
+        LOG('loading...')
+        let simContents = fs.readFileSync(simplePath).toString()
+        let simLines = simContents.split(/\r\n|\n/)
+        let allLines = simLines.length
+        simpleTimeOffset = parseInt(simLines[0])
+        for (let i=2; i<allLines; i++) {
+            const lineStr = simLines[i]
+            let txInfos = lineStr.split(' ')
+            timeMap.set(`${txInfos[1]} ${txInfos[2]}`, parseInt(txInfos[3]))
+        }
+    }
 }
 
 let map = new Map();
@@ -49,34 +69,40 @@ async function run() {
     let minOffset = 1000
 
     let success = 0
-    let failed = 0
+    let dropped = 0
     let reverted = 0 
     
     try {
-        for (let i=1; i<lines.length; i++) {
+        let allLines = lines.length
+        for (let i=0; i<allLines; i++) {
             const lineStr = lines[i]
             
             if (lineStr.length != 80) {
-                console.log('[SKIP]', lineStr)
+                // console.log('[SKIP]', lineStr)
                 continue
             }
             let txInfos = lineStr.split(' ')
             let transactionHash = txInfos[1]
             if (transactionHash.length != 66) {
-                // SKIP
-                console.log('[ERR] wrong data:', lineStr)
+                // console.log('[ERR] wrong data format:', lineStr)
                 continue
             }
-            LOG(` * transactionHash: ${transactionHash}`)
+            if (simpleTimeOffset == 0) {
+                simpleTimeOffset = Number(txInfos[0]) - 100
+            }
+
+            let progress = parseInt(i * 100 / allLines)
+            LOG(` * [${progress}%] transactionHash: ${transactionHash}`)
             let txResults = await web3.eth.getTransactionReceipt(transactionHash)
             if (txResults == undefined || txResults == null) {
                 LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
-                failed++
+                console.log(` *** send tx - Dropped ***`)
+                dropped++
             }
             else {
                 LOG(`eth_getTransactionReceipt(${transactionHash}) => ${JSON.stringify(txResults)}`)
                 if (txResults.status == true) {
-                    LOG(` *** send tx - Seccess ***`)
+                    console.log(` *** send tx - Seccess ***`)
                     success++
 
                     let settleTime = 0
@@ -89,7 +115,8 @@ async function run() {
                         settleTime = map.get(txResults.blockNumber)
                     }
 
-                    let timeOffset = settleTime - Number(txInfos[0])
+                    let startTime = Number(txInfos[0])
+                    let timeOffset = settleTime - startTime
                     if (timeOffset > maxOffset) {
                         maxOffset = timeOffset
                     }
@@ -99,9 +126,21 @@ async function run() {
                     //let outOffset = parseInt(timeOffset * 1000)
                     // sendTime, blockTime, 반영시간, txid ?
                     fs.appendFileSync(resultPath, `${txInfos[0]} ${results.timestamp}000 ${timeOffset} ${transactionHash}\n`)
+
+                    let stx = parseInt((startTime - simpleTimeOffset) / 10)
+                    let etx = parseInt((settleTime - simpleTimeOffset) / 10)
+
+                    let timeStr = `${stx} ${etx}`
+                    if (timeMap.has(timeStr) == false) {
+                        timeMap.set(timeStr, 1)
+                    }
+                    else {
+                        let cntValue = timeMap.get(timeStr)
+                        timeMap.set(timeStr, cntValue+1)
+                    }
                 }
                 else {
-                    LOG(` *** send tx - Reverted ***`)
+                    console.log(` *** send tx - Reverted ***`)
                     // Why ??
                     reverted++
                 }
@@ -109,13 +148,22 @@ async function run() {
         }
 
         LOG(`==================================`)
-        let refStr = `[tx]  success: ${success}  reverted: ${reverted}  deleted: ${failed}\n`
+        let refStr = `[tx]  success: ${success}  reverted: ${reverted}  dropped: ${dropped}\n`
         refStr += `[latency]  min: ${minOffset}  max: ${maxOffset}`
         LOG(refStr)
-        
-        fs.appendFileSync(refPath, `*** ${resultPath} ***\n`)
+
         fs.appendFileSync(refPath, refStr +'\n')
 
+        LOG('saving...')
+        let mapsize = timeMap.keys.length
+        let cnt = 1
+        let saveStr = ''
+        for (let [key, value] of timeMap) {
+            saveStr += `${cnt++} ${key} ${value}\n`
+        }
+        LOG('saving...(overwriting)')
+        fs.writeFileSync(resultPath, `${simpleTimeOffset}\nidx sTime eTime counts\n`)
+        fs.appendFileSync(simplePath, saveStr)
     }
     catch (err) {
 		LOG(err); 

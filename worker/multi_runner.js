@@ -9,7 +9,7 @@ const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}
 
 // 장기간 실행중 실행 간격을 변경하거나 실행을 종료하고자 할 경우, 이 파일의 값을 수정
 const confPath = 'interval.txt'
-const intervalOffset = 2
+const intervalOffset = 1
 
 let agent_ip = 'localhost'
 let remained=100000000000
@@ -86,7 +86,7 @@ function updateStatus() {
 
 const body = {
     jsonrpc: "2.0",
-    method: "transfer",
+    method: "ok",
     params: [],
     id: 0
 }

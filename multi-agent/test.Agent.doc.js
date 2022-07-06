@@ -13,11 +13,12 @@ const test = require('../common/test.doc')
 
 const INFO = (msg) => console.log(msg)
 const ERROR = (msg) => console.error(msg)
+const showLog = true
 const DEBUG = (msg) => {
   if (saveLog) {
     fs.appendFileSync(debugLog, msg+'\n')
   }
-  else {
+  if (showLog) {
     console.log(msg)
   }
 }
@@ -39,7 +40,7 @@ const conf = utils.loadConf(confPath)
 let debugLog = `./test.doc.node${minerIdx}.log`
 let saveLog = false
 if (args.length == 5) {
-  if (args[4]) {
+  if (args[4].toLowerCase() === 'true') {
     saveLog = true
     fs.writeFileSync(debugLog, `${new Date().toISOString()} [INFO] ${port} ${minerIdx} ${startIdx} ${confPath}\n`)
   }
@@ -50,8 +51,6 @@ let accounts = {}
 let acountCnt = 0
 let acountLock = 0
 let successCount = 0
-
-let txGasLimit = 150000  // createDocument API
 
 // Express
 const app = express()
@@ -81,8 +80,7 @@ server.listen(port, async () => {
 
     let chainId = await connection.eth.getChainId()
     test.customChain(chainId)
-    test.setTestEnv(httpRpcUrl, conf, txGasLimit)
-
+    test.setTestEnv(httpRpcUrl, conf)
 
     for (let i=0; i<acountCnt; i++) {
 
@@ -92,13 +90,23 @@ server.listen(port, async () => {
       account.nonceLock = await connection.eth.getTransactionCount(account.sender)
       account.startTxCount = account.nonceLock
 
+      if (i == 0) {
+        INFO(`gas: (create document) ${await test.createEstimateGas(account.sender)}`)
+      }
+
       account.docuCnt = await test.getDocCount(account.sender)
       if (account.docuCnt == 0) {
         INFO(`[WARN] No document!! - Need to prepare api beforn test`)
       }
+      else if (i == 0) {
+        let docId = Web3Utils.hexToNumberString(account.sender + (account.docuCnt - 1).toString())
+        INFO(`gas: (update document) ${await test.updateEstimateGas(account.sender, docId)}`)
+      }
 
       accounts[i] = account;
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)
+
+      
     }
     
   } catch(err) {
@@ -217,6 +225,80 @@ const updateDocu = async (req, res) => {
     })
 }
 
+const updateDocu2 = async (req, res) => {
+ 
+  let ps = req.body.params
+  let multiCnt = 2
+  //console.log('request params:', ps.length, ps)
+  if (Array.isArray(ps) && ps.length > 0) {
+    multiCnt = Number(ps[0])
+    //DEBUG(`params[0]: ${multiCnt} from [${ps[0]} ${typeof(ps[0])}]`)
+  }
+  
+  let success = 0
+  for (let i=0; i<multiCnt; i++) {
+  
+    const accIdLock = acountLock++
+    if (acountLock == acountCnt) {
+      acountLock = 0;
+    }
+    const nonce = accounts[accIdLock].nonceLock++
+    const docNum = accounts[accIdLock].docuCnt - 1  // 마지막 docu만 update?
+    const acc = accounts[accIdLock]
+
+    let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
+    let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex')
+    DEBUG(`update docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
+    const request = test.updateReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
+    const reqId = request.body.id;
+
+    let sendTime = new Date()
+    httpRequest.post(request)
+      .then(response => {
+        try {
+          if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
+            const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
+            //INFO(`Success! - ${JSON.stringify(output)}`)
+            DEBUG(`${sendTime.valueOf()} ${response.body.result}`)
+            //res.status(200)
+            //res.set('Content-Type', 'application/json;charset=utf8')
+            //res.json(output)
+            successCount++
+            success++
+          } else {
+            // console.dir(response)
+            const output = { result: false, req: request, res: response.body.error }
+            ERROR(`Need check! - ${JSON.stringify(output)}`)
+            res.status(500)
+            res.set('Content-Type', 'application/json;charset=utf8')
+            res.json(output)
+          }
+
+        } catch (err) {
+          ERROR(`It SHOULD NOT happen! - ${err}`)
+          res.status(500)
+          res.set('Content-Type', 'application/json;charset=utf8')
+          res.json({ result: false, req: request, res: response.body, error: `${err}` })
+          //process.exit(1)
+        }
+        // 전체가 성공한 경우(?)
+        if (multiCnt == success) {
+          res.status(200)
+          res.set('Content-Type', 'application/json;charset=utf8')
+          res.json({ result: true, success })
+        }
+      })
+      .catch(err => {
+        const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}` }
+        ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
+        res.status(500)
+        res.set('Content-Type', 'application/json;charset=utf8')
+        res.json(output)
+      })
+  }
+}
+
+
 const transferCount = async (req, res) => {
   const output = { result: true, successTxCount: successCount, senders: acountCnt }
   //INFO(`Success! - ${JSON.stringify(output)}`)
@@ -239,6 +321,7 @@ const serverExit = async (req, res) => {
 const router = express.Router()
 router.route('/prepare').post(createDocu)   // createDocument
 router.route('/transfer').post(updateDocu)  // updateDocument
+router.route('/transferMulti').post(updateDocu2)  // updateDocument2
 router.route('/transferCount').get(transferCount)
 router.route('/serverExit').post(serverExit)
 router.route('/serverExit').get(serverExit)

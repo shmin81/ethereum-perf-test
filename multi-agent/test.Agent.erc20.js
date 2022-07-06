@@ -23,7 +23,7 @@ const startIdx = Number(args[2])
 
 // Configurations from file
 let confPath = null
-if (args.length == 4) {
+if (args.length > 4) {
   confPath = args[3]
 }
 const conf = utils.loadConf(confPath)

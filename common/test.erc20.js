@@ -47,6 +47,47 @@ exports.setTestEnv = function (_httpRpcUrl, _config, _gas=70000) {
     }
 }
 
+const estimateGasDocuBody = {
+    jsonrpc:"2.0",
+    method:"eth_estimateGas",
+    params:[],
+    id: 1
+}
+
+exports.transferEstimateGas = function (senderAddr, receiver) {
+    const txData = {
+        from: senderAddr,
+        to: contractAddr,
+        data: ABIHelper.getCallDataByABI(transferObj, [`${receiver}`, 1])
+    }
+    estimateGasDocuBody.params = [ txData ]
+    estimateGasDocuBody.id++
+    //console.log(txData)
+    request.body = estimateGasDocuBody
+
+    return new Promise(function(resolve, reject) {
+      httpRequest.post(request)
+        .then(response => {
+            if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
+                let _gas = Web3_Utils.hexToNumber(response.body.result)
+                gasHex = Web3_Utils.numberToHex(_gas + 1000)
+                resolve(_gas)
+            }
+            else {
+                console.error(response.body)
+                // 초기 상태 검증 => contract 불일치(?)
+                process.exit(2)
+            }
+        })
+        .catch(err => {
+            console.error(err)
+            // 초기 상태 검증 => contract 불일치(?)
+            process.exit(2)
+        })
+    })
+}
+
 exports.transferReq = function (senderKey, receiver, nonce, amount=1) {
 
     const hrTime = process.hrtime()

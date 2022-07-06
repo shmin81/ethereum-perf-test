@@ -14,7 +14,10 @@ const { Transaction } = require('@ethereumjs/tx')
 const Web3_Utils = require('web3-utils')
 
 let contractAddr = null;
-let gasHex = null
+let createGasHex = '0x249F0'
+let updateGasHex = '0x186A0'
+const gasUp = 1000
+
 const createObj = {
     "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"},{"name": "_expTimestamp","type": "uint256"}],
     "name":"createDocument",
@@ -54,13 +57,89 @@ const request = {
 exports.setTestEnv = function (_httpRpcUrl, _config, _gas=200000) {
 
     contractAddr = _config.docuAddress
-    gasHex = Web3_Utils.toHex(_gas);
     request.uri = _httpRpcUrl
     request.headers = _config.httpheaders
 
     if (contractAddr == undefined || contractAddr == null || !contractAddr.startsWith('0x')) {
         throw new Error('wrong contract address')
     }
+}
+
+const estimateGasDocuBody = {
+    jsonrpc:"2.0",
+    method:"eth_estimateGas",
+    params:[],
+    id: 1
+}
+
+exports.createEstimateGas = function (senderAddr, _id=12345, _fileHash='0x11111111111111111111111111111111ffffffffffffffffffffffffffffffff') {
+    const txData = {
+        from: senderAddr,
+        to: contractAddr,
+        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${Math.ceil(+ new Date() / 100)}`])
+    }
+    estimateGasDocuBody.params = [ txData ]
+    estimateGasDocuBody.id++
+    //console.log(txData)
+    request.body = estimateGasDocuBody
+
+    return new Promise(function(resolve, reject) {
+      httpRequest.post(request)
+        .then(response => {
+            if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
+                let _gas = Web3_Utils.hexToNumber(response.body.result)
+                createGasHex = Web3_Utils.numberToHex(_gas + gasUp)
+                // update가 불가능한 상황??
+                updateGasHex = Web3_Utils.numberToHex(Math.floor(_gas/3))
+                resolve(_gas)
+            }
+            else {
+                console.error(response.body)
+                // 초기 상태 검증 => contract 불일치(?)
+                process.exit(2)
+            }
+        })
+        .catch(err => {
+            console.error(err)
+            // 초기 상태 검증 => contract 불일치(?)
+            process.exit(2)
+        })
+    })
+}
+
+exports.updateEstimateGas = function (senderAddr, _id=1, _fileHash='0x11111111111111111111111111111111ffffffffffffffffffffffffffffffff') {
+    const txData = {
+        from: senderAddr,
+        to: contractAddr,
+        data: ABIHelper.getCallDataByABI(updateObj, [`${_id}`, `${_fileHash}`, `${Math.ceil(+ new Date() / 100)}`])
+    }
+    estimateGasDocuBody.params = [ txData ]
+    estimateGasDocuBody.id++
+    //console.log(txData)
+    request.body = estimateGasDocuBody
+
+    return new Promise(function(resolve, reject) {
+      httpRequest.post(request)
+        .then(response => {
+            if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
+                let _gas = Web3_Utils.hexToNumber(response.body.result)
+                updateGasHex = Web3_Utils.numberToHex(_gas + gasUp)
+                resolve(_gas)
+            }
+            else {
+                console.error(response.body)
+                // 초기 상태 검증 => contract 불일치(?)
+                process.exit(2)
+            }
+        })
+        .catch(err => {
+            console.error(err)
+            // 초기 상태 검증 => contract 불일치(?)
+            process.exit(2)
+        })
+    })
 }
 
 exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
@@ -70,7 +149,7 @@ exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
 
     const txData = {
         nonce: `${Web3_Utils.toHex(nonce)}`,
-        gasLimit: gasHex,
+        gasLimit: createGasHex,
         gasPrice: '0x00', // 10 Gwei
         to: contractAddr,
         data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${_expTimestamp}`])
@@ -101,14 +180,14 @@ exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
         body: _body
     }
 }
-exports.updateReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp, _gasHex="0x186A0") {
+exports.updateReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
 
     const hrTime = process.hrtime()
     const reqId = hrTime[0] * 1000000000 + hrTime[1]
 
     const txData = {
         nonce: `${Web3_Utils.toHex(nonce)}`,
-        gasLimit: _gasHex,
+        gasLimit: updateGasHex,
         gasPrice: '0x00', // 10 Gwei
         to: contractAddr,
         data: ABIHelper.getCallDataByABI(updateObj, [`${_id}`, `${_fileHash}`, `${_expTimestamp}`])
@@ -165,7 +244,7 @@ const callDocuBody = {
     jsonrpc:"2.0",
     method:"eth_call",
     params:[],
-    id: 0
+    id: 100
 }
 exports.check = function (_id, _fileHash) {
 

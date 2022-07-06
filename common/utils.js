@@ -103,7 +103,7 @@ exports.sendHttp = function (req) {
                     resolve(response.body.result)
                 }
                 else {
-                    reject(response.body.result)
+                    reject(response.body)
                 }
             })
             .catch(err => {

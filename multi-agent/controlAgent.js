@@ -28,7 +28,7 @@ if (fs.existsSync(nodeScript) == false) {
 
 let saveLog = false
 if (args[2] != undefined) {
-  saveLog = args[2] == true ? true : false
+  saveLog = args[2] === 'true' ? true : false
 }
 
 // ethereum node 

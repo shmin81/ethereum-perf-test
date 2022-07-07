@@ -10,7 +10,7 @@ const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}
 const confPath = 'target_tps.txt'
 
 const nodeScript = './tps2Sub_transferMulti.js'
-const nodeDelayOffset = 200 // 0 ~ 900 (process 시작 간격이 1초 정도 되는 듯)
+const nodeDelayOffset = 100 // 0 ~ 900 (각 process 시작 후, tx send 시작 간격)
 // #####################################
 
 let agent_ip = 'localhost'
@@ -36,7 +36,6 @@ if (args[3] != undefined) {
     remained = Number(args[3])
 }
 
-
 INFO(`test option => target: ${agent_ip}, targetTps: ${targetTps} tps, testTime: ${remained} seconds`)
 
 const conf = utils.loadConf(configPath)
@@ -60,20 +59,24 @@ fs.writeFileSync(confPath, (nodeTargetTps).toString());
 
 function updateStatus() {
 
-    remained--;
+    if (Date.now() > startTime) {
+        remained--;
+    }
     if (remained < 1) {
         remained = 0
         fs.writeFileSync(confPath, remained.toString());
     }
 }
 
-
+const delayMilliSecond = (1200 + nodeDelayOffset) * minerCnt
+INFO(`test run after ${(delayMilliSecond / 1000).toFixed(1)} seconds`)
 let runningTask = 0
 let childs = []
+let startTime = Date.now() + delayMilliSecond
 function newProcess(id, agentRpc) {
   runningTask++;
 
-  let delay_to_start_up = (minerCnt - id - 1) * nodeDelayOffset;
+  let delay_to_start_up = startTime - (minerCnt - id - 1) * nodeDelayOffset;
   //INFO(`=========================================================`);
   INFO(`[${id}] new test process => node ${nodeScript} ${agentRpc} ${delay_to_start_up}\n`);
 

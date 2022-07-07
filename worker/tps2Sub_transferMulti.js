@@ -14,28 +14,42 @@ let sendLoopCnt = 2
 let numTxs = [ ]
 numTxs.push(0)
 
+const body = {
+    jsonrpc: "2.0",
+    method: "ok",
+    params: [ sendLoopCnt ],
+    id: 0
+}
+
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
-    console.log('Wrong input params - "agent_rpc" [ delay_start_up_time(ms) ]');
+    console.log('Wrong input params - "agent_rpc" [ start_up_time(ms) ]');
     console.log('  ex) node tps2Sub_single_thread.js http://localhost:10080/transferMulti');
     process.exit(2);
 }
+
+// loadInterval()
+let tps = fs.readFileSync(confPath)
+if (isNaN(Number(tps))) {
+    ERROR(`wrong ... ${confPath} -> ${tps}`)
+    return
+}
+updateInterval(Number(tps))
 
 const rpcUrl = args[0]
 INFO(rpcUrl)
 //console.log(`${new Date().toISOString()} [INFO] '${args[1]}'`)
 if (args[1] != undefined) {
-    const ms = Number(args[1])
-    if (isNaN(ms)) {
-        ERROR(`Wrong input params(delay_start_up_time): ${args[1]}`)
+    const wakeUpTime = Number(args[1])
+    if (isNaN(wakeUpTime)) {
+        ERROR(`Wrong input params(start_up_time): ${args[1]}`)
         process.exit(2)
     }
     // delay 
-    const wakeUpTime = Date.now() + ms;
+    //const wakeUpTime = Date.now() + ms;
     while (Date.now() < wakeUpTime) { }
     //console.log(`${new Date().toISOString()} [INFO] '${ms}' '${wakeUpTime}'`)
 }
-
 
 let runningItems = 0
 let chkCnt = 0
@@ -91,7 +105,7 @@ function updateInterval(_nVal) {
         let newTickInterval = Math.round(sendLoopCnt * 1000 / _nVal)
         if (tickInterval != newTickInterval) {
             tickInterval = newTickInterval
-            INFO(`set tickInterval: ${tickInterval}, send tx: ${sendLoopCnt}`)
+            INFO(`set -tickInterval: ${tickInterval}, -multi-tx: ${sendLoopCnt}`)
             body.params = [ sendLoopCnt ]
         }
     }
@@ -100,13 +114,6 @@ function updateInterval(_nVal) {
         isRunning = false;
         //process.exit(0)
     }
-}
-
-const body = {
-    jsonrpc: "2.0",
-    method: "ok",
-    params: [ sendLoopCnt ],
-    id: 0
 }
 
 const request = {
@@ -168,13 +175,6 @@ async function eachTest()
     sendhttp()
 }
 
-let tps = fs.readFileSync(confPath)
-if (isNaN(Number(tps))) {
-    ERROR(`wrong ... ${confPath} -> ${tps}`)
-    return
-}
-updateInterval(Number(tps))
-
 let startTime = null
 let chkTimerId = null;
 async function mainTest() {
@@ -183,6 +183,7 @@ async function mainTest() {
         updateStatus();
     }, 1000);
 
+    INFO('starting...')
     startTime = new Date()
     eachTest();
 }

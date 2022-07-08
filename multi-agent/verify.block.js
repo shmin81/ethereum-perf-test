@@ -142,11 +142,14 @@ async function run() {
             resultStr += ` * ${privSender} ${txCnt}\n`
         }
 
-        let tpsResultStr = ` * max TPS: ${maxTps}`
+        let tpsResultStr = ` * max block tps: ${maxTps}`
         LOG(tpsResultStr)
 
-        console.log('saving...')
+        console.log('saving...(overwriting)')
         fs.writeFileSync(resultPath, resultStr+`\n===================\n${tpsResultStr}`)
+
+        LOG('saving...(updating)')
+        fs.appendFileSync(refPath, `${tpsResultStr}\n`)
 	}
 	catch (err) {
 		LOG(err); 

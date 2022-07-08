@@ -120,8 +120,8 @@ async function run() {
 
             let progressNow = parseInt(i * 100 / allLines)
             if (progress != progressNow) {
-                LOG(` * ${project_id} [${progress}%] transactionHash: ${transactionHash}`)
-                progressNow = progress
+                LOG(` * ${project_id} [${progressNow}%] transactionHash: ${transactionHash}`)
+                progress = progressNow
             }
             let txResults = await web3.eth.getTransactionReceipt(transactionHash)
             if (txResults == undefined || txResults == null) {

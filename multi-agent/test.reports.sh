@@ -27,11 +27,11 @@ done
 echo running... node verify.tx.latency2.js
 node verify.tx.latency2.js
 
-echo running... node verify.block.js
-node verify.block.js
+echo running... node verify.block.js $configPath
+node verify.block.js  $configPath
 
 echo 'move results'
-mv test.doc.node* ./$outFile/
-mv verify.tx.report* ./$outFile/
+mv test.doc.node* ./$testName/
+mv verify.tx.result.* ./$testName/
 
 echo 'done.'

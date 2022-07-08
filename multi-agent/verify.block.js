@@ -2,10 +2,6 @@
 const fs = require("fs");
 const utils = require('../common/utils')
 const Web3 = require('web3')
-const Web3Utils = require('web3-utils');
-
-const config = require("../config")
-const conf = config.prepare()
 
 //const logPath = './verify.block.log'
 const resultPath = './verify.tx.results.block.log'
@@ -31,6 +27,8 @@ else if (args[1] != undefined) {
         process.exit(2);
     }
 }
+const confPath = args[0]
+const conf = utils.loadConf(confPath)
 
 let httpRpcUrl = ''
 let web3 = null
@@ -69,7 +67,7 @@ async function run() {
         let beforeLedgerHaveTxs = 0
         while (NeedContinue) {
 
-            blockInfo = await web3.eth.getBlock(blockNumber)
+            blockInfo = await web3.eth.getBlock(blockNumber, true)
             LOG(`BlockNumber (${blockNumber}) -miner: ${blockInfo.miner} -tx count: ${blockInfo.transactions.length}`, blockInfo.transactions.length > 0)
 
             // 직전에 조회한 블록의 TPS

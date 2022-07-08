@@ -3,13 +3,10 @@ const fs = require("fs");
 const utils = require('../common/utils')
 const Web3 = require('web3')
 
-//const logPath = './verify.block.log'
+const refPath = './verify.tx.results.latency.ref.log'
 const resultPath = './verify.tx.results.block.log'
-const LOG = (msg, saveLog=false) =>  {
-    console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
-    // if (saveLog) {
-    //     fs.appendFileSync(logPath, msg+'\n')
-    // }
+const LOG = (msg) =>  {
+    console.log(new Date().toISOString(), msg)
 }
 
 const MaxScanRangeNotFoundTx = 5
@@ -23,7 +20,7 @@ if (args[0] == undefined || args[0].indexOf('help') != -1) {
 else if (args[1] != undefined) {
     blockNumber = parseInt(args[1])
     if (blockNumber <= MaxScanRangeNotFoundTx) {
-        console.log(`Wrong input optional param - "blockNumber": ${blockNumber}`);
+        LOG(`Wrong input optional param - "blockNumber": ${blockNumber}`);
         process.exit(2);
     }
 }
@@ -40,10 +37,30 @@ async function init() {
     httpRpcUrl = endpointConf[0]
     LOG(`RPC: ${httpRpcUrl}`)
 
+    if (fs.existsSync(refPath)) {
+        LOG('loading...')
+        let simContents = fs.readFileSync(refPath).toString()
+        let simLines = simContents.split(/\r\n|\n/)
+        let allLines = simLines.length - 2
+        for (let i=2; i<allLines; i++) {
+            const lineStr = simLines[i]
+            if (lineStr.startsWith('[block number]')) {
+                //let strinfos = lineStr.split(' ')
+                let idx = lineStr.indexOf('max:')
+                let maxBlockNumGet = Number(lineStr.substring(idx+4))
+                if (!Number.isNaN(maxBlockNumGet) && maxBlockNumGet > blockNumber) {
+                    blockNumber = maxBlockNumGet
+                }
+            }
+        }
+        blockNumber += MaxScanRangeNotFoundTx
+    }
+
 	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
     web3 = new Web3(httpProvider)
 
     let latestBlockNum = await web3.eth.getBlockNumber()
+    LOG(`get latest block: ${latestBlockNum}`)
     if (latestBlockNum < blockNumber) {
         console.log(`wrong input the future's blockNumber": ${blockNumber}`);
         process.exit(2);
@@ -51,6 +68,7 @@ async function init() {
     else if (blockNumber == 0) {
         blockNumber = latestBlockNum
     }
+    LOG(`set start block ${blockNumber}`)
 }
 
 let resultStr = ''
@@ -73,7 +91,7 @@ async function run() {
             // 직전에 조회한 블록의 TPS
             if (nextBlockTxCount > 0) {
                 let tpsTmp = nextBlockTxCount / (nextBlockTimeStamp - blockInfo.timestamp)
-                resultStr += ` - block tps: ${tpsTmp}\n`
+                resultStr += ` - block tps: ${tpsTmp} [ tx:${nextBlockTxCount}, timeOffset:${nextBlockTimeStamp - blockInfo.timestamp} ]\n`
                 if (tpsTmp > maxTps) {
                     maxTps = tpsTmp
                 }
@@ -99,7 +117,7 @@ async function run() {
             beforeLedgerHaveTxs = 0
             //let gasUsedP = Web3Utils.hexToNumber(blockInfo.gasUsed) / Web3Utils.hexToNumber( blockInfo.gasLimit) * 100
             let gasUsedP = blockInfo.gasUsed / blockInfo.gasLimit * 100
-            resultStr += `BlockNumber: ${blockNumber} -miner: ${blockInfo.miner} -timestamp: ${blockInfo.timestamp} -block tx: ${nextBlockTxCount} -gas: ${gasUsedP} %\n`
+            resultStr += `BlockNumber: ${blockNumber} -miner: ${blockInfo.miner} -timestamp: ${blockInfo.timestamp} -block tx: ${nextBlockTxCount} -gas: ${gasUsedP.toFixed(3)} %\n`
             let privSender = null
             let txCnt = 0
             for (let i=0; i<nextBlockTxCount; i++) {

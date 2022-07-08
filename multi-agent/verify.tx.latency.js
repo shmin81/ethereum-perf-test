@@ -204,7 +204,7 @@ async function run() {
         refStr += `[block number]  min: ${minBlockNum}  max: ${maxBlockNum}`
         LOG(refStr)
 
-        fs.appendFileSync(refPath, refStr +'\n')
+        fs.appendFileSync(refPath, refStr +`\n`)
 
         LOG('saving...')
         let mapsize = timeMap.keys.length

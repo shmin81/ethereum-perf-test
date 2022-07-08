@@ -13,12 +13,11 @@ const test = require('../common/test.doc')
 
 const INFO = (msg) => console.log(msg)
 const ERROR = (msg) => console.error(msg)
-const showLog = true
-const DEBUG = (msg) => {
+const DEBUG = (msg, showLog=true) => {
   if (saveLog) {
     fs.appendFileSync(debugLog, msg+'\n')
   }
-  if (showLog) {
+  else if (showLog) {
     console.log(msg)
   }
 }
@@ -26,7 +25,7 @@ const DEBUG = (msg) => {
 // Environment variables
 const args = process.argv.slice(2)
 if (args.length < 3) {
-  console.log('node  test.Agent.chainzDoc.js  portNumber  minerIdx  accountStartIdx configPath [ debug(false) ]')
+  console.log('node  test.Agent.doc.js  portNumber  minerIdx  accountStartIdx configPath [ debug(false) ]')
   process.exit(0)
 }
 const port = Number(args[0])
@@ -105,8 +104,6 @@ server.listen(port, async () => {
 
       accounts[i] = account;
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)
-
-      
     }
     
   } catch(err) {
@@ -205,7 +202,7 @@ const updateDocu = async (req, res) => {
           successCount++
         } else {
           // console.dir(response)
-          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error }
+          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error, id: reqId }
           ERROR(`Need check! - ${JSON.stringify(output)}`)
           res.status(500)
           res.set('Content-Type', 'application/json;charset=utf8')
@@ -217,7 +214,7 @@ const updateDocu = async (req, res) => {
       }
     })
     .catch(err => {
-      const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}` }
+      const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}`, id: reqId }
       ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
       res.status(500)
       res.set('Content-Type', 'application/json;charset=utf8')
@@ -234,7 +231,7 @@ const updateDocu2 = async (req, res) => {
     multiCnt = Number(ps[0])
     //DEBUG(`params[0]: ${multiCnt} from [${ps[0]} ${typeof(ps[0])}]`)
   }
-  
+
   let success = 0
   for (let i=0; i<multiCnt; i++) {
   
@@ -248,7 +245,7 @@ const updateDocu2 = async (req, res) => {
 
     let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
     let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex')
-    DEBUG(`update docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
+    DEBUG(`update docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`, false)
     const request = test.updateReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
     const reqId = request.body.id;
 
@@ -257,23 +254,22 @@ const updateDocu2 = async (req, res) => {
       .then(response => {
         try {
           if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
-            const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
+            //const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
             //INFO(`Success! - ${JSON.stringify(output)}`)
-            DEBUG(`${sendTime.valueOf()} ${response.body.result}`)
             //res.status(200)
             //res.set('Content-Type', 'application/json;charset=utf8')
             //res.json(output)
+            DEBUG(`${sendTime.valueOf()} ${response.body.result}`, false)
             successCount++
             success++
           } else {
             // console.dir(response)
-            const output = { result: false, req: request, res: response.body.error }
+            const output = { result: false, req: request, res: response.body.error, id: reqId }
             ERROR(`Need check! - ${JSON.stringify(output)}`)
             res.status(500)
             res.set('Content-Type', 'application/json;charset=utf8')
             res.json(output)
           }
-
         } catch (err) {
           ERROR(`It SHOULD NOT happen! - ${err}`)
           res.status(500)
@@ -289,7 +285,7 @@ const updateDocu2 = async (req, res) => {
         }
       })
       .catch(err => {
-        const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}` }
+        const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}`, id: reqId }
         ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
         res.status(500)
         res.set('Content-Type', 'application/json;charset=utf8')
@@ -297,7 +293,6 @@ const updateDocu2 = async (req, res) => {
       })
   }
 }
-
 
 const transferCount = async (req, res) => {
   const output = { result: true, successTxCount: successCount, senders: acountCnt }

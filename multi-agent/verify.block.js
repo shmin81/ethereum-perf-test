@@ -126,7 +126,7 @@ async function run() {
                 while(num.length < 4) {
                     num = '0' + num
                 }
-                LOG(`  [${num}] ${tx.from} ${tx.nonce} ${tx.transactionIndex}`, true)
+                //LOG(`  [${num}] ${tx.from} ${tx.nonce} ${tx.transactionIndex}`)
             
                 if (privSender != tx.from) {
                     if (privSender != null) {

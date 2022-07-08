@@ -29,7 +29,7 @@ async function run() {
     let minSendTime = 0
     let maxSettleTime = 0
     let count = 0
-    let pre_progress = -10
+    let pre_progress = -1
     try {
         let allLines = lines.length - 1
         for (let i=1; i<allLines; i++) {
@@ -70,6 +70,7 @@ async function run() {
             })
         }
 
+        LOG('sorting...')
         timeMap.sort(function(a, b) { // 오름차순
             return a.eTime < b.eTime ? -1 : a.eTime > b.eTime ? 1 : 0;
         });
@@ -110,7 +111,7 @@ async function run() {
                 timeMap2.set(timeStr2, cntValue2+1)
             }
         }
-        LOG('saving...(overwriting)')
+        LOG('[0/3] saving...(overwriting)')
         fs.writeFileSync(simplePath, `idx sTime eTime\n`)
         fs.appendFileSync(simplePath, strX0)
 
@@ -119,7 +120,7 @@ async function run() {
         for (let [key, value] of timeMap1) {
             saveStr += `${cnt++} ${key} ${value}\n`
         }
-        LOG('saving...(overwriting)')
+        LOG('[1/3] saving...(overwriting)')
         fs.writeFileSync(simplePath1, `idx sTime eTime counts\n`)
         fs.appendFileSync(simplePath1, saveStr)
 
@@ -128,7 +129,7 @@ async function run() {
         for (let [key, value] of timeMap2) {
             saveStr += `${cnt++} ${key} ${value}\n`
         }
-        LOG('saving...(overwriting)')
+        LOG('[2/3] saving...(overwriting)')
         fs.writeFileSync(simplePath2, `idx sTime eTime counts\n`)
         fs.appendFileSync(simplePath2, saveStr)
 
@@ -136,6 +137,7 @@ async function run() {
         refStr += ` * tps: ${(count * 1000 / (maxSettleTime-minSendTime)).toFixed(3)}\n`
         refStr += ` * tx: ${count}, start time: ${minSendTime}, last block time: ${maxSettleTime}`
         LOG(refStr)
+        LOG('[3/3] saving...(updating)')
         fs.appendFileSync(refPath, `\n${refStr}\n`)
 
     }

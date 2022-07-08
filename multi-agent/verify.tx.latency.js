@@ -97,6 +97,7 @@ async function run() {
     let success = 0
     let dropped = 0
     let reverted = 0 
+    let progress = -1
     
     try {
         let allLines = lines.length
@@ -117,18 +118,21 @@ async function run() {
                 simpleTimeOffset = Number(txInfos[0]) - 100
             }
 
-            let progress = parseInt(i * 100 / allLines)
-            LOG(` * ${project_id} [${progress}%] transactionHash: ${transactionHash}`)
+            let progressNow = parseInt(i * 100 / allLines)
+            if (progress != progressNow) {
+                LOG(` * ${project_id} [${progress}%] transactionHash: ${transactionHash}`)
+                progressNow = progress
+            }
             let txResults = await web3.eth.getTransactionReceipt(transactionHash)
             if (txResults == undefined || txResults == null) {
                 //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
-                console.log(` *** send tx - Dropped ***`)
+                console.log(` * tx: ${transactionHash} -> Dropped`)
                 dropped++
             }
             else {
                 //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${JSON.stringify(txResults)}`)
                 if (txResults.status == true) {
-                    console.log(` *** send tx - Seccess ***`)
+                    // console.log(` * tx: ${transactionHash} -> Seccess`)
                     success++
 
                     if (minSendTime == 0) {
@@ -190,7 +194,7 @@ async function run() {
                     }
                 }
                 else {
-                    console.log(` *** send tx - Reverted ***`)
+                    console.log(` * tx: ${transactionHash} -> Reverted`)
                     // Why ??
                     reverted++
                 }

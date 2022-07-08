@@ -7,26 +7,30 @@ const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg ===
 
 const args = process.argv.slice(2);
 if (args[0] == undefined || args[0].indexOf('help') != -1) {
-    console.log('Wrong input params - "configPath transactionLogPath"');
+    console.log('Wrong input params - "configPath transactionLogPath [ project_id (0) ]"');
     console.log('  ex) node verify.tx.js ../configs/local.cbdc.test.json ./test.doc.node0.log');
     process.exit(2);
 }
 
-const resultPath = './verify.tx.latency.results.log'
-const refPath = './verify.tx.latency.ref.log'
-const simplePath = './verify.tx.latency.res.simple.log'
-const simplePath2 = './verify.tx.latency.res.simple2.log'
+const resultPath = './verify.tx.results.latency.log'
+const refPath = './verify.tx.results.latency.ref.log'
+const simplePath = './verify.tx.results.latency.simple1.log'
+const simplePath2 = './verify.tx.results.latency.simple2.log'
 
 const confPath = args[0]
 const conf = utils.loadConf(confPath)
 const transactionLogPath = args[1]
+let project_id = 0
+if (args[2] != undefined) {
+    project_id = args[2]
+}
 
 fs.appendFileSync(refPath, `\n*** ${new Date().toISOString()} ***\n`)
 fs.appendFileSync(refPath, `*** ${transactionLogPath} ***\n`)
 
 let httpRpcUrl = ''
 let lines = null
-let web3
+let web3 = null
 
 let timeMap = new Map();
 let timeMap2 = new Map();
@@ -49,6 +53,7 @@ function init() {
     if (fs.existsSync(resultPath) == false) {
         fs.writeFileSync(resultPath, `sendTime blockTime timeOffset txid\n`)
     }
+    // 기존 데이터가 있으면 거기에 새로운 데이터를 추가함
     if (fs.existsSync(simplePath) == true) {
         LOG('loading...')
         let simContents = fs.readFileSync(simplePath).toString()
@@ -61,6 +66,7 @@ function init() {
             timeMap.set(`${txInfos[1]} ${txInfos[2]}`, parseInt(txInfos[3]))
         }
     }
+    // 기존 데이터가 있으면 거기에 새로운 데이터를 추가함
     if (fs.existsSync(simplePath2) == true) {
         LOG('loading...')
         let simContents = fs.readFileSync(simplePath2).toString()
@@ -80,7 +86,13 @@ async function run() {
     LOG('  =======  run  =======')
     let results = null
     let maxOffset = 1
-    let minOffset = 1000
+    let minOffset = 100000
+
+    let maxBlockNum = 1
+    let minBlockNum = await web3.eth.getBlockNumber()
+
+    let minSendTime = 0
+    let maxSettleTime = 0
 
     let success = 0
     let dropped = 0
@@ -106,24 +118,36 @@ async function run() {
             }
 
             let progress = parseInt(i * 100 / allLines)
-            LOG(` * [${progress}%] transactionHash: ${transactionHash}`)
+            LOG(` * ${project_id} [${progress}%] transactionHash: ${transactionHash}`)
             let txResults = await web3.eth.getTransactionReceipt(transactionHash)
             if (txResults == undefined || txResults == null) {
-                LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
+                //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
                 console.log(` *** send tx - Dropped ***`)
                 dropped++
             }
             else {
-                LOG(`eth_getTransactionReceipt(${transactionHash}) => ${JSON.stringify(txResults)}`)
+                //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${JSON.stringify(txResults)}`)
                 if (txResults.status == true) {
                     console.log(` *** send tx - Seccess ***`)
                     success++
+
+                    if (minSendTime == 0) {
+                        minSendTime = Number(txInfos[0])
+                    }
 
                     let settleTime = 0
                     if (map.has(txResults.blockNumber) == false) {
                         results = await web3.eth.getBlock(txResults.blockHash)
                         settleTime = results.timestamp * 1000
                         map.set(txResults.blockNumber, settleTime)
+
+                        if (maxBlockNum < txResults.blockNumber) {
+                            maxBlockNum = txResults.blockNumber
+                            maxSettleTime = `${results.timestamp}000`
+                        }
+                        if (minBlockNum > txResults.blockNumber) {
+                            minBlockNum = txResults.blockNumber
+                        }
                     }
                     else {
                         settleTime = map.get(txResults.blockNumber)
@@ -175,7 +199,9 @@ async function run() {
 
         LOG(`==================================`)
         let refStr = `[tx]  success: ${success}  reverted: ${reverted}  dropped: ${dropped}\n`
-        refStr += `[latency]  min: ${minOffset}  max: ${maxOffset}`
+        refStr += `[latency]  min: ${minOffset}  max: ${maxOffset}\n`
+        refStr += `[tx]  send first: ${minSendTime}  settle last: ${maxSettleTime}\n`
+        refStr += `[block number]  min: ${minBlockNum}  max: ${maxBlockNum}`
         LOG(refStr)
 
         fs.appendFileSync(refPath, refStr +'\n')

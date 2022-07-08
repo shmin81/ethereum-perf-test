@@ -5,10 +5,11 @@ const Web3 = require('web3')
 
 const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
 
-const resultPath = './verify.tx.latency.results.log'
-const simplePath = './verify.tx.latency.res.simple.full.log'
-const simplePath1 = './verify.tx.latency.res.simple.10ms.log'
-const simplePath2 = './verify.tx.latency.res.simple.100ms.log'
+const resultPath = './verify.tx.results.latency.log'
+const simplePath = './verify.tx.results.latency.simple.full.log'
+const simplePath1 = './verify.tx.results.latency.simple.10ms.log'
+const simplePath2 = './verify.tx.results.latency.simple.100ms.log'
+const refPath = './verify.tx.results.latency.ref.log'
 
 let lines = null
 
@@ -24,7 +25,11 @@ function init() {
 
 async function run() {
     LOG('  =======  run  =======')
-    
+
+    let minSendTime = 0
+    let maxSettleTime = 0
+    let count = 0
+    let pre_progress = -10
     try {
         let allLines = lines.length - 1
         for (let i=1; i<allLines; i++) {
@@ -36,12 +41,27 @@ async function run() {
                 // console.log('[ERR] wrong data format:', lineStr)
                 continue
             }
+            count++
             if (simpleTimeOffset == 0) {
                 simpleTimeOffset = Number(txInfos[0]) - 100
+                minSendTime = Number(txInfos[0])
+                maxSettleTime = Number(txInfos[1])
+            }
+            else {
+                if (minSendTime > Number(txInfos[0])) {
+                    minSendTime = Number(txInfos[0])
+                }
+                if (maxSettleTime < Number(txInfos[1])) {
+                    maxSettleTime = Number(txInfos[1])
+                }
             }
 
             let progress = parseInt(i * 100 / allLines)
-            LOG(` * [${progress}%] transactionHash: ${transactionHash}`)
+            // LOG(` * [${progress}%] transactionHash: ${transactionHash}`)
+            if (pre_progress != progress) {
+                LOG(` * [${progress}%] transactionHash: ${transactionHash}`)
+                pre_progress = progress
+            }
             
             timeMap.push({
                 id: txInfos[3],
@@ -111,6 +131,12 @@ async function run() {
         LOG('saving...(overwriting)')
         fs.writeFileSync(simplePath2, `idx sTime eTime counts\n`)
         fs.appendFileSync(simplePath2, saveStr)
+
+        let refStr = ' ============================================\n'
+        refStr += ` * tps: ${(count * 1000 / (maxSettleTime-minSendTime)).toFixed(3)}\n`
+        refStr += ` * tx: ${count}, start time: ${minSendTime}, last block time: ${maxSettleTime}`
+        LOG(refStr)
+        fs.appendFileSync(refPath, `\n${refStr}\n`)
 
     }
     catch (err) {

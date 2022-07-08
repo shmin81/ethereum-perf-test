@@ -303,14 +303,15 @@ const transferCount = async (req, res) => {
 }
 
 const serverExit = async (req, res) => {
+  
+  INFO(`/serverExit`)
   const output = { result: true }
   //INFO(`Success! - ${JSON.stringify(output)}`)
   res.status(200)
   res.set('Content-Type', 'application/json;charset=utf8')
   res.json(output)
 
-  ERROR(`serverExit`)
-  //process.exit(0)
+  process.exit(0)
 }
 
 const router = express.Router()

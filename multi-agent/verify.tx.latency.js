@@ -7,7 +7,7 @@ const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg ===
 
 const args = process.argv.slice(2);
 if (args[0] == undefined || args[0].indexOf('help') != -1) {
-    console.log('Wrong input params - "configPath transactionLogPath [ project_id (0) ]"');
+    console.log('Wrong input params - "configPath transactionLogPath [ project_id (int, default:0) ]"');
     console.log('  ex) node verify.tx.js ../configs/local.cbdc.test.json ./test.doc.node0.log');
     process.exit(2);
 }
@@ -22,7 +22,8 @@ const conf = utils.loadConf(confPath)
 const transactionLogPath = args[1]
 let project_id = 0
 if (args[2] != undefined) {
-    project_id = args[2]
+    project_id = parseInt(args[2])
+    project_id = Math.abs(project_id)
 }
 
 fs.appendFileSync(refPath, `\n*** ${new Date().toISOString()} ***\n`)
@@ -41,7 +42,12 @@ function init() {
 	LOG(JSON.stringify(conf))
 	
 	const endpointConf = utils.loadJson(conf.endpointfile)
-    httpRpcUrl = endpointConf[0]
+    if (project_id < endpointConf.length) {
+        httpRpcUrl = endpointConf[project_id]
+    }
+    else {
+        httpRpcUrl = endpointConf[0]
+    }
     LOG(`RPC: ${httpRpcUrl}`)
 
 	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));

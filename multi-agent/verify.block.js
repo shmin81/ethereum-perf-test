@@ -9,12 +9,14 @@ const LOG = (msg) =>  {
     console.log(new Date().toISOString(), msg)
 }
 
+// tx가 없는 블록이 지정된 수만큼 연속으로 나타날 경우, 스캔을 중지
 const MaxScanRangeNotFoundTx = 5
 let blockNumber = 0
 const args = process.argv.slice(2);
 if (args[0] == undefined || args[0].indexOf('help') != -1) {
     console.log('Wrong input params - "configPath [ blockNumber (int) ]"');
-    console.log('  ex) 100번쨰 블록에서 시작하여 이전 블록들을 스캔: node verify.block.js ../configs/local.cbdc.test.json 100');
+    console.log(`  ex1) ${refPath} 파일로 부터 블록번호를 가져와 이전 블록들을 스캔: node verify.block.js ../configs/local.cbdc.test.json`);
+    console.log('  ex2) 입력한 블록번호부터 이전 블록들을 스캔: node verify.block.js ../configs/local.cbdc.test.json 100');
     process.exit(2);
 }
 else if (args[1] != undefined) {
@@ -142,7 +144,7 @@ async function run() {
             resultStr += ` * ${privSender} ${txCnt}\n`
         }
 
-        let tpsResultStr = ` * max block tps: ${maxTps}`
+        let tpsResultStr = ` * block tps (max): ${maxTps}`
         LOG(tpsResultStr)
 
         console.log('saving...(overwriting)')

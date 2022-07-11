@@ -134,8 +134,8 @@ async function run() {
         fs.appendFileSync(simplePath2, saveStr)
 
         let refStr = ' ============================================\n'
-        refStr += ` * tps: ${(count * 1000 / (maxSettleTime-minSendTime)).toFixed(3)}\n`
-        refStr += ` * tx: ${count}, start time: ${minSendTime}, last block time: ${maxSettleTime}`
+        refStr += ` * tx: ${count}, start time: ${minSendTime}, last block time: ${maxSettleTime}\n`
+        refStr += ` * tps: ${(count * 1000 / (maxSettleTime-minSendTime)).toFixed(3)}`
         LOG(refStr)
         LOG('[3/3] saving...(updating)')
         fs.appendFileSync(refPath, `\n${refStr}\n`)

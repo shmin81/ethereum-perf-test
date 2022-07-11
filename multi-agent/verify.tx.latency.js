@@ -203,8 +203,8 @@ async function run() {
 
         LOG(`==================================`)
         let refStr = `[tx]  success: ${success}  reverted: ${reverted}  dropped: ${dropped}\n`
-        refStr += `[latency]  min: ${minOffset}  max: ${maxOffset}\n`
-        refStr += `[tx]  send first: ${minSendTime}  settle last: ${maxSettleTime}\n`
+        refStr += `[tx latency]  min: ${minOffset}  max: ${maxOffset}\n`
+        refStr += `[tx time]  send first: ${minSendTime}  settle last: ${maxSettleTime}\n`
         refStr += `[block number]  min: ${minBlockNum}  max: ${maxBlockNum}`
         LOG(refStr)
 

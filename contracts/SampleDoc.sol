@@ -8,10 +8,10 @@ pragma solidity >=0.5.0 <=0.8.18;
 
 contract SampleDoc {
 
-    // TO-DO: 문서의 그룹핑이 필요하지 않을까? 예를 들어 인입이 A시스템읹지? B시스템인지?
     struct Document {
         uint256 id;
         bytes32 fileHash;
+        bytes32 fileNameHash;
         uint256 regTimestamp;
         uint256 expTimestamp;
         address owner;
@@ -25,13 +25,17 @@ contract SampleDoc {
     event CreateDocument (
         uint256 id,
         address owner,
-        uint256 count
+        uint256 count,
+        bytes32 fileHash,
+        uint256 expTimestamp
     );
 
     event UpdateDocument (
         uint256 id,
         address owner,
-        uint256 count
+        uint256 count,
+        bytes32 fileHash,
+        uint256 expTimestamp
     );
 
     event DeleteDocument (
@@ -59,17 +63,19 @@ contract SampleDoc {
         uint256 _expTimestamp
     ) public {
         require( documents[ _id ].isActive == false, "ERROR_DOCUMENT_ID_EXISTS" ) ;
+        require( _expTimestamp <= block.timestamp, "ERROR_DOCUMENT_EXPIRED" );
 
         documentCounts[msg.sender] += 1;
 
         documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash ;
+        documents[ _id ].fileNameHash = ~_fileHash ;
         documents[ _id ].regTimestamp = block.timestamp ;
         documents[ _id ].expTimestamp = _expTimestamp ;
         documents[ _id ].owner = msg.sender ;
         documents[ _id ].isActive = true ;
 
-        emit CreateDocument(_id, msg.sender, documentCounts[msg.sender]);
+        emit CreateDocument(_id, msg.sender, documentCounts[msg.sender], _fileHash, _expTimestamp);
     }
 
     function updateDocument (
@@ -84,10 +90,11 @@ contract SampleDoc {
         documentUpdateCounts[ _id ] += 1 ;
 
         documents[ _id ].fileHash = _fileHash ;
+        documents[ _id ].fileNameHash = ~_fileHash ;
         documents[ _id ].regTimestamp = block.timestamp ;
         documents[ _id ].expTimestamp = _expTimestamp ;
 
-        emit UpdateDocument(_id, msg.sender, documentUpdateCounts[ _id ]);
+        emit UpdateDocument(_id, msg.sender, documentUpdateCounts[ _id ], _fileHash, _expTimestamp);
     }
 
     /**

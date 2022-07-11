@@ -8,12 +8,18 @@ const ERROR = (msg) => console.error(msg)
 // 장기간 실행중 실행 간격을 변경하거나 실행을 종료하고자 할 경우, 이 파일의 값을 수정
 const confPath = 'target_tps.txt'
 
-loadInterval()
-
 let isRunning = true
 let tickInterval = 1000
+let sendLoopCnt = 1
 let numTxs = [ ]
 numTxs.push(0)
+
+const body = {
+    jsonrpc: "2.0",
+    method: "ok",
+    params: [ ],
+    id: 0
+}
 
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
@@ -21,6 +27,14 @@ if (args[0] == undefined) {
     console.log('  ex) node tps2Sub_single_thread.js http://localhost:10080/transfer');
     process.exit(2);
 }
+
+// loadInterval()
+let tps = fs.readFileSync(confPath)
+if (isNaN(Number(tps))) {
+    ERROR(`wrong ... ${confPath} -> ${tps}`)
+    return
+}
+updateInterval(Number(tps))
 
 const rpcUrl = args[0]
 INFO(rpcUrl)
@@ -37,7 +51,6 @@ if (args[1] != undefined) {
     //console.log(`${new Date().toISOString()} [INFO] '${ms}' '${wakeUpTime}'`)
 }
 
-let sendLoopCnt = 1
 let runningItems = 0
 let chkCnt = 0
 let before = 0
@@ -61,48 +74,47 @@ function loadInterval() {
         if (err) { console.log('read', confPath, err); }
         else { 
             let nVal = Number(data)
-            let iVal = 0
             if (!isNaN(nVal)) {
-                iVal = Math.round(nVal)
-            }
-            //console.log('read:', data, '->', iVal, '-', nVal);
-            if (iVal > 0) {
-                if (iVal > 800) {
-                    // too high
-                    sendLoopCnt = 5
-                }
-                else if (iVal > 600) {
-                    sendLoopCnt = 4
-                }
-                else if (iVal > 400) {
-                    sendLoopCnt = 3
-                }
-                else if (iVal > 200) {
-                    sendLoopCnt = 2
-                }
-                else {
-                    sendLoopCnt = 1
-                }
-                let newTickInterval = Math.round(sendLoopCnt * 1000 / nVal)
-                if (tickInterval != newTickInterval) {
-                    tickInterval = newTickInterval
-                    INFO(`set tickInterval: ${tickInterval}, send tx: ${sendLoopCnt}`)
-                }
-            }
-            else {
-                // 종료 모드
-                isRunning = false;
-                //process.exit(0)
+                updateInterval(nVal)
             }
         }
     });
 }
 
-const body = {
-    jsonrpc: "2.0",
-    method: "ok",
-    params: [ ],
-    id: 0
+function updateInterval(_nVal) {
+
+    let iVal = Math.round(_nVal)
+
+    //console.log('read:', data, '-', iVal);
+    if (iVal > 0) {
+        if (iVal > 400) {
+            // too high
+            sendLoopCnt = 5
+        }
+        else if (iVal > 300) {
+            sendLoopCnt = 4
+        }
+        else if (iVal > 200) {
+            sendLoopCnt = 3
+        }
+        else if (iVal > 100) {
+            sendLoopCnt = 2
+        }
+        else {
+            sendLoopCnt = 1
+        }
+
+        let newTickInterval = Math.round(sendLoopCnt * 1000 / _nVal)
+        if (tickInterval != newTickInterval) {
+            tickInterval = newTickInterval
+            INFO(`set -tickInterval: ${tickInterval}, -multi-tx: ${sendLoopCnt}`)
+        }
+    }
+    else {
+        // 종료 모드
+        isRunning = false;
+        //process.exit(0)
+    }
 }
 
 const request = {
@@ -150,7 +162,7 @@ async function eachTest()
     }
     else {
         let endTime = new Date()
-        let offsetTime = (endTime-startTime-tickInterval)/1000
+        let offsetTime = (endTime - startTime - tickInterval) / 1000
         INFO(`tx: ${reqId}, tps(avg): ${(reqId/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
         //INFO(`end time: ${endTime.toISOString()}`)
 
@@ -172,6 +184,7 @@ async function mainTest() {
         updateStatus();
     }, 1000);
 
+    INFO('starting...')
     startTime = new Date()
     eachTest();
 }

@@ -23,7 +23,7 @@ const body = {
 
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
-    console.log('Wrong input params - "agent_rpc" [ start_up_time(ms) ]');
+    console.log('Wrong input params - "agent_rpc" [ start_up_time(ms) working_time(s) ]');
     console.log('  ex) node tps2Sub_single_thread.js http://localhost:10080/transferMulti');
     process.exit(2);
 }
@@ -51,6 +51,16 @@ if (args[1] != undefined) {
     //console.log(`${new Date().toISOString()} [INFO] '${ms}' '${wakeUpTime}'`)
 }
 
+let remainWorkTime = -1
+if (args[2] != undefined) {
+    remainWorkTime = Number(args[1])
+    if (isNaN(remainWorkTime) || remainWorkTime < 1) {
+        ERROR(`Wrong input params(working_time): ${args[2]}`)
+        process.exit(2)
+    }
+    remainWorkTime = Math.round(remainWorkTime)
+}
+
 let runningItems = 0
 let chkCnt = 0
 let before = 0
@@ -68,6 +78,14 @@ function updateStatus() {
     before = lastIdx
     
     loadInterval()
+
+    if (remainWorkTime !=  -1) {
+        remainWorkTime -= 1
+        if (remainWorkTime == 0) {
+            // 종료 모드
+            isRunning = false;
+        }
+    }
 }
 
 function loadInterval() {
@@ -163,7 +181,7 @@ async function eachTest()
     else {
         // 종료시
         let endTime = new Date()
-        let offsetTime = (endTime - startTime - tickInterval)/1000
+        let offsetTime = (endTime - startTime - tickInterval) / 1000
         INFO(`tx: ${successCount}, tps(avg): ${(successCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
         //INFO(`end time: ${endTime.toISOString()}`)
 

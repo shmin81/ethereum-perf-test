@@ -78,9 +78,9 @@ function newProcess(id, agentRpc) {
 
   let delay_to_start_up = startTime - (minerCnt - id - 1) * nodeDelayOffset;
   //INFO(`=========================================================`);
-  INFO(`[${id}] new test process => node ${nodeScript} ${agentRpc} ${delay_to_start_up}\n`);
+  INFO(`[${id}] new test process => node ${nodeScript} ${agentRpc} ${delay_to_start_up} ${remained}\n`);
 
-  let process2 = spawn("node", [ nodeScript, agentRpc, delay_to_start_up ]);
+  let process2 = spawn("node", [ nodeScript, agentRpc, delay_to_start_up, remained ]);
   childs.push(process2)
   
   process2.stderr.on('data', function(data) {

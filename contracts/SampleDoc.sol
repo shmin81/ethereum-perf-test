@@ -63,7 +63,7 @@ contract SampleDoc {
         uint256 _expTimestamp
     ) public {
         require( documents[ _id ].isActive == false, "ERROR_DOCUMENT_ID_EXISTS" ) ;
-        require( _expTimestamp <= block.timestamp, "ERROR_DOCUMENT_EXPIRED" );
+        require( _expTimestamp > block.timestamp, "ERROR_DOCUMENT_EXPIRED" );
 
         documentCounts[msg.sender] += 1;
 

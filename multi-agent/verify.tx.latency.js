@@ -16,6 +16,7 @@ const resultPath = './verify.tx.results.latency.log'
 const refPath = './verify.tx.results.latency.ref.log'
 const simplePath = './verify.tx.results.latency.simple1.log'
 const simplePath2 = './verify.tx.results.latency.simple2.log'
+const resultPath2 = './verify.tx.results.block.tps.log'
 
 const confPath = args[0]
 const conf = utils.loadConf(confPath)
@@ -32,6 +33,7 @@ let httpRpcUrl = ''
 let lines = null
 let web3 = null
 
+let map = new Map();
 let timeMap = new Map();
 let timeMap2 = new Map();
 let simpleTimeOffset = 0
@@ -86,13 +88,27 @@ async function init() {
             timeMap2.set(`${txInfos[1]} ${txInfos[2]}`, parseInt(txInfos[3]))
         }
     }
+    // 기존 데이터가 있으면 거기에 새로운 데이터를 추가함
+    if (fs.existsSync(resultPath2) == true) {
+        LOG(`loading... ${resultPath2}`)
+        let simContents = fs.readFileSync(resultPath2).toString()
+        let simLines = simContents.split(/\r\n|\n/)
+        let allLines = simLines.length - 1
+        for (let i=0; i<allLines; i++) {
+            const lineStr = simLines[i]
+            let txInfos = lineStr.split(' ')
+            let bn = parseInt(txInfos[0])
+            let st = parseInt(txInfos[1])
+            map.set(bn, st)
+            updateBlock(bn, st)
+        }
+    }
     
     return new Promise(function(resolve, reject) {
         resolve(true)
     })
 }
 
-let map = new Map();
 let maxOffset = 1
 let minOffset = 100000
 
@@ -179,6 +195,7 @@ async function run() {
                         settleTime = results.timestamp * 1000
                         if (map.has(txResults.blockNumber) == false) {
                             map.set(txResults.blockNumber, settleTime)
+                            updateBlock(txResults.blockNumber, settleTime)
                         }
                     }
                     else {
@@ -225,6 +242,12 @@ async function run() {
         fs.writeFileSync(simplePath2, `${simpleTimeOffset}\nidx sTime eTime counts\n`)
         fs.appendFileSync(simplePath2, saveStr)
 
+        saveStr = ''
+        for (let [key, value] of map) {
+            saveStr += `${key} ${value}\n`
+        }
+        LOG(`saving...(overwriting) ${resultPath2}`)
+        fs.writeFileSync(resultPath2, saveStr)
     }
     catch (err) {
 		LOG(err); 
@@ -256,6 +279,7 @@ async function processMulti(transactionHash, startTime) {
                 settleTime = results.timestamp * 1000
                 if (map.has(txResults.blockNumber) == false) {
                     map.set(txResults.blockNumber, settleTime)
+                    updateBlock(txResults.blockNumber, settleTime)
                 }
             }
             else {
@@ -272,8 +296,18 @@ async function processMulti(transactionHash, startTime) {
     }
 }
 
+function updateBlock(_blockNumber, _settleTime) {
+    //console.log('updateBlock', _blockNumber, _settleTime)
+    if (maxBlockNum < _blockNumber) {
+        maxBlockNum = _blockNumber
+        maxSettleTime = _settleTime
+    }
+    if (minBlockNum > _blockNumber) {
+        minBlockNum = _blockNumber
+    }
+}
 
-function update(_startTime, _settleTime, _transactionHash, _blockNumber) {
+function update(_startTime, _settleTime, _transactionHash) {
 
     let timeOffset = _settleTime - _startTime
     if (timeOffset > maxOffset) {
@@ -281,14 +315,6 @@ function update(_startTime, _settleTime, _transactionHash, _blockNumber) {
     }
     if (timeOffset < minOffset) {
         minOffset = timeOffset
-    }
-
-    if (maxBlockNum < _blockNumber) {
-        maxBlockNum = _blockNumber
-        maxSettleTime = _settleTime
-    }
-    if (minBlockNum > _blockNumber) {
-        minBlockNum = _blockNumber
     }
 
     // sendTime, blockTime, 반영시간, txid ?

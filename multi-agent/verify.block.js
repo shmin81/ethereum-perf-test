@@ -4,7 +4,8 @@ const utils = require('../common/utils')
 const Web3 = require('web3')
 
 const refPath = './verify.tx.results.latency.ref.log'
-const resultPath = './verify.tx.results.block.log'
+const resultPath = './verify.tx.results.block.sender.log'
+const resultPath2 = './verify.tx.results.block.tps.log'
 const LOG = (msg) =>  {
     console.log(new Date().toISOString(), msg)
 }
@@ -74,6 +75,7 @@ async function init() {
 }
 
 let resultStr = ''
+let resultStr2 = 'blockNumber timestamp timeOffset txCount tps\n'
 async function run() {
 	LOG('  =======  run  =======')
 	let results = null
@@ -90,14 +92,21 @@ async function run() {
             blockInfo = await web3.eth.getBlock(blockNumber, true)
             LOG(`BlockNumber (${blockNumber}) -miner: ${blockInfo.miner} -timestamp: ${blockInfo.timestamp} -tx count: ${blockInfo.transactions.length}`, blockInfo.transactions.length > 0)
 
-            // 직전에 조회한 블록의 TPS
-            if (nextBlockTxCount > 0) {
-                let tpsTmp = nextBlockTxCount / (nextBlockTimeStamp - blockInfo.timestamp)
-                resultStr += ` - block tps: ${tpsTmp} [ tx:${nextBlockTxCount}, timeOffset:${nextBlockTimeStamp - blockInfo.timestamp} ]\n`
-                if (tpsTmp > maxTps) {
-                    maxTps = tpsTmp
+            if (nextBlockTimeStamp > 0) {
+                let blkTimeOffset = nextBlockTimeStamp - blockInfo.timestamp
+                let tpsTmp = nextBlockTxCount / blkTimeOffset
+                resultStr2 += `${blockNumber+1} ${nextBlockTimeStamp} ${blkTimeOffset} ${nextBlockTxCount} ${tpsTmp}\n`
+            
+                // 직전에 조회한 블록의 TPS
+                if (nextBlockTxCount > 0) {
+                    resultStr += ` - block tps: ${tpsTmp} [ tx:${nextBlockTxCount}, timeOffset:${blkTimeOffset} ]\n`
+
+                    if (tpsTmp > maxTps) {
+                        maxTps = tpsTmp
+                    }
                 }
             }
+            
             nextBlockTimeStamp = blockInfo.timestamp
             nextBlockTxCount = blockInfo.transactions.length
 
@@ -149,6 +158,9 @@ async function run() {
 
         LOG(`saving...(overwriting) ${resultPath}`)
         fs.writeFileSync(resultPath, resultStr+`\n===================\n${tpsResultStr}`)
+
+        LOG(`saving...(overwriting) ${resultPath2}`)
+        fs.writeFileSync(resultPath2, resultStr+`\n===================\n${tpsResultStr2}`)
 
         LOG(`saving... (updating) ${refPath}`)
         fs.appendFileSync(refPath, `${tpsResultStr}\n`)

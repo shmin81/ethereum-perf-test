@@ -40,7 +40,7 @@ async function init() {
     LOG(`RPC: ${httpRpcUrl}`)
 
     if (fs.existsSync(refPath)) {
-        LOG('loading...')
+        LOG(`loading... ${refPath}`)
         let simContents = fs.readFileSync(refPath).toString()
         let simLines = simContents.split(/\r\n|\n/)
         let allLines = simLines.length - 2
@@ -88,7 +88,7 @@ async function run() {
         while (NeedContinue) {
 
             blockInfo = await web3.eth.getBlock(blockNumber, true)
-            LOG(`BlockNumber (${blockNumber}) -miner: ${blockInfo.miner} -tx count: ${blockInfo.transactions.length}`, blockInfo.transactions.length > 0)
+            LOG(`BlockNumber (${blockNumber}) -miner: ${blockInfo.miner} -timestamp: ${blockInfo.timestamp} -tx count: ${blockInfo.transactions.length}`, blockInfo.transactions.length > 0)
 
             // 직전에 조회한 블록의 TPS
             if (nextBlockTxCount > 0) {
@@ -147,10 +147,10 @@ async function run() {
         let tpsResultStr = ` * block tps (max): ${maxTps}`
         LOG(tpsResultStr)
 
-        console.log('saving...(overwriting)')
+        LOG(`saving...(overwriting) ${resultPath}`)
         fs.writeFileSync(resultPath, resultStr+`\n===================\n${tpsResultStr}`)
 
-        LOG('saving...(updating)')
+        LOG(`saving... (updating) ${refPath}`)
         fs.appendFileSync(refPath, `${tpsResultStr}\n`)
 	}
 	catch (err) {

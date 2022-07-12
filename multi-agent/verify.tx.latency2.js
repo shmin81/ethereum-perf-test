@@ -17,7 +17,7 @@ let timeMap = []
 let simpleTimeOffset = 0
 
 function init() {
-
+    LOG(`loading... ${resultPath}`)
     let contents = fs.readFileSync(resultPath).toString()
     lines = contents.split(/\r\n|\n/)
     console.log(`items: ${lines.length - 2}(?)`)
@@ -111,7 +111,8 @@ async function run() {
                 timeMap2.set(timeStr2, cntValue2+1)
             }
         }
-        LOG('[0/3] saving...(overwriting)')
+        
+        LOG(`saving...(overwriting) ${simplePath}`)
         fs.writeFileSync(simplePath, `idx sTime eTime\n`)
         fs.appendFileSync(simplePath, strX0)
 
@@ -120,7 +121,8 @@ async function run() {
         for (let [key, value] of timeMap1) {
             saveStr += `${cnt++} ${key} ${value}\n`
         }
-        LOG('[1/3] saving...(overwriting)')
+        
+        LOG(`saving...(overwriting) ${simplePath1}`)
         fs.writeFileSync(simplePath1, `idx sTime eTime counts\n`)
         fs.appendFileSync(simplePath1, saveStr)
 
@@ -129,7 +131,8 @@ async function run() {
         for (let [key, value] of timeMap2) {
             saveStr += `${cnt++} ${key} ${value}\n`
         }
-        LOG('[2/3] saving...(overwriting)')
+        
+        LOG(`saving...(overwriting) ${simplePath2}`)
         fs.writeFileSync(simplePath2, `idx sTime eTime counts\n`)
         fs.appendFileSync(simplePath2, saveStr)
 
@@ -137,7 +140,7 @@ async function run() {
         refStr += ` * tx: ${count}, start time: ${minSendTime}, last block time: ${maxSettleTime}\n`
         refStr += ` * tps: ${(count * 1000 / (maxSettleTime-minSendTime)).toFixed(3)}`
         LOG(refStr)
-        LOG('[3/3] saving...(updating)')
+        LOG(`saving... (updating) ${refPath}`)
         fs.appendFileSync(refPath, `\n${refStr}\n`)
 
     }

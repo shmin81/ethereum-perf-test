@@ -26,8 +26,7 @@ if (args[2] != undefined) {
     project_id = Math.abs(project_id)
 }
 
-fs.appendFileSync(refPath, `\n*** ${new Date().toISOString()} ***\n`)
-fs.appendFileSync(refPath, `*** ${transactionLogPath} ***\n`)
+let resultDatas = `\n*** ${new Date().toISOString()} ***\n*** ${transactionLogPath} ***\n`
 
 let httpRpcUrl = ''
 let lines = null
@@ -37,7 +36,7 @@ let timeMap = new Map();
 let timeMap2 = new Map();
 let simpleTimeOffset = 0
 
-function init() {
+async function init() {
 
 	LOG(JSON.stringify(conf))
 	
@@ -53,6 +52,8 @@ function init() {
 	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
     web3 = new Web3(httpProvider)
 
+    minBlockNum = await web3.eth.getBlockNumber()
+
     let contents = fs.readFileSync(transactionLogPath).toString()
     lines = contents.split(/\r\n|\n/)
     console.log(`items: ${lines.length - 2}(?)`)
@@ -61,7 +62,7 @@ function init() {
     }
     // 기존 데이터가 있으면 거기에 새로운 데이터를 추가함
     if (fs.existsSync(simplePath) == true) {
-        LOG('loading...')
+        LOG(`loading... ${simplePath}`)
         let simContents = fs.readFileSync(simplePath).toString()
         let simLines = simContents.split(/\r\n|\n/)
         let allLines = simLines.length - 1
@@ -74,7 +75,7 @@ function init() {
     }
     // 기존 데이터가 있으면 거기에 새로운 데이터를 추가함
     if (fs.existsSync(simplePath2) == true) {
-        LOG('loading...')
+        LOG(`loading... ${simplePath2}`)
         let simContents = fs.readFileSync(simplePath2).toString()
         let simLines = simContents.split(/\r\n|\n/)
         let allLines = simLines.length - 1
@@ -85,43 +86,55 @@ function init() {
             timeMap2.set(`${txInfos[1]} ${txInfos[2]}`, parseInt(txInfos[3]))
         }
     }
+    
+    return new Promise(function(resolve, reject) {
+        resolve(true)
+    })
 }
 
 let map = new Map();
+let maxOffset = 1
+let minOffset = 100000
+
+let maxBlockNum = 1
+let minBlockNum = 1000000000000
+
+let minSendTime = 0
+let maxSettleTime = 0
+
+let success = 0
+let dropped = 0
+let reverted = 0 
+let progress = -1
+
+function getObjFromStr(i) {
+    const lineStr = lines[i]
+            
+    if (lineStr.length != 80) {
+        return null
+    }
+    let txInfos = lineStr.split(' ')
+    
+    if (txInfos[1].length != 66) {
+        return null
+    }
+    return txInfos
+}
+
 async function run() {
     LOG('  =======  run  =======')
     let results = null
-    let maxOffset = 1
-    let minOffset = 100000
-
-    let maxBlockNum = 1
-    let minBlockNum = await web3.eth.getBlockNumber()
-
-    let minSendTime = 0
-    let maxSettleTime = 0
-
-    let success = 0
-    let dropped = 0
-    let reverted = 0 
-    let progress = -1
     
     try {
         let allLines = lines.length
-        for (let i=0; i<allLines; i++) {
-            const lineStr = lines[i]
-            
-            if (lineStr.length != 80) {
-                // console.log('[SKIP]', lineStr)
-                continue
-            }
-            let txInfos = lineStr.split(' ')
+        for (let i=0; i<allLines;) {
+
+            const txInfos = getObjFromStr(i++)
+            if (txInfos == null) continue
             let transactionHash = txInfos[1]
-            if (transactionHash.length != 66) {
-                // console.log('[ERR] wrong data format:', lineStr)
-                continue
-            }
+
             if (simpleTimeOffset == 0) {
-                simpleTimeOffset = Number(txInfos[0]) - 100
+                simpleTimeOffset = Number(txInfos[0]) - 200
             }
 
             let progressNow = parseInt(i * 100 / allLines)
@@ -129,7 +142,19 @@ async function run() {
                 LOG(` * ${project_id} [${progressNow}%] transactionHash: ${transactionHash}`)
                 progress = progressNow
             }
+            
+            if (minSendTime > 0 && (allLines - i) > 100 && progressNow <= 95 ) {
+                for (let j=0; j<4;j++) {
+                    let txInfos1 = getObjFromStr(i++)
+                    if (txInfos1 != null) {
+                        //console.log(i, txInfos1[1])
+                        processMulti(txInfos1[1], Number(txInfos1[0]))
+                    }
+                }
+            }
+            
             let txResults = await web3.eth.getTransactionReceipt(transactionHash)
+            
             if (txResults == undefined || txResults == null) {
                 //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
                 console.log(` * tx: ${transactionHash} -> Dropped`)
@@ -141,63 +166,27 @@ async function run() {
                     // console.log(` * tx: ${transactionHash} -> Seccess`)
                     success++
 
+                    let startTime = Number(txInfos[0])
                     if (minSendTime == 0) {
-                        minSendTime = Number(txInfos[0])
+                        minSendTime = startTime
                     }
 
                     let settleTime = 0
                     if (map.has(txResults.blockNumber) == false) {
+                        
                         results = await web3.eth.getBlock(txResults.blockHash)
+                        
                         settleTime = results.timestamp * 1000
-                        map.set(txResults.blockNumber, settleTime)
-
-                        if (maxBlockNum < txResults.blockNumber) {
-                            maxBlockNum = txResults.blockNumber
-                            maxSettleTime = `${results.timestamp}000`
-                        }
-                        if (minBlockNum > txResults.blockNumber) {
-                            minBlockNum = txResults.blockNumber
+                        if (map.has(txResults.blockNumber) == false) {
+                            map.set(txResults.blockNumber, settleTime)
                         }
                     }
                     else {
                         settleTime = map.get(txResults.blockNumber)
                     }
+                    
+                    update(startTime, settleTime, transactionHash)
 
-                    let startTime = Number(txInfos[0])
-                    let timeOffset = settleTime - startTime
-                    if (timeOffset > maxOffset) {
-                        maxOffset = timeOffset
-                    }
-                    if (timeOffset < minOffset) {
-                        minOffset = timeOffset
-                    }
-                    //let outOffset = parseInt(timeOffset * 1000)
-                    // sendTime, blockTime, 반영시간, txid ?
-                    fs.appendFileSync(resultPath, `${txInfos[0]} ${results.timestamp}000 ${timeOffset} ${transactionHash}\n`)
-
-                    let stx = parseInt((startTime - simpleTimeOffset) / 10)
-                    let etx = parseInt((settleTime - simpleTimeOffset) / 10)
-
-                    let timeStr = `${stx} ${etx}`
-                    if (timeMap.has(timeStr) == false) {
-                        timeMap.set(timeStr, 1)
-                    }
-                    else {
-                        let cntValue = timeMap.get(timeStr)
-                        timeMap.set(timeStr, cntValue+1)
-                    }
-
-                    let stx2 = parseInt(stx / 10)
-                    let etx2 = parseInt(etx / 10)
-
-                    let timeStr2 = `${stx2} ${etx2}`
-                    if (timeMap2.has(timeStr2) == false) {
-                        timeMap2.set(timeStr2, 1)
-                    }
-                    else {
-                        let cntValue2 = timeMap2.get(timeStr2)
-                        timeMap2.set(timeStr2, cntValue2+1)
-                    }
                 }
                 else {
                     console.log(` * tx: ${transactionHash} -> Reverted`)
@@ -214,16 +203,16 @@ async function run() {
         refStr += `[block number]  min: ${minBlockNum}  max: ${maxBlockNum}`
         LOG(refStr)
 
-        fs.appendFileSync(refPath, refStr +`\n`)
+        LOG(`saving... (updating) ${refPath}`)
+        fs.appendFileSync(refPath, resultDatas + refStr +`\n`)
 
-        LOG('saving...')
-        let mapsize = timeMap.keys.length
+        //let mapsize = timeMap.keys.length
         let cnt = 1
         let saveStr = ''
         for (let [key, value] of timeMap) {
             saveStr += `${cnt++} ${key} ${value}\n`
         }
-        LOG('saving...(overwriting)')
+        LOG(`saving...(overwriting) ${simplePath}`)
         fs.writeFileSync(simplePath, `${simpleTimeOffset}\nidx sTime eTime counts\n`)
         fs.appendFileSync(simplePath, saveStr)
 
@@ -232,7 +221,7 @@ async function run() {
         for (let [key, value] of timeMap2) {
             saveStr += `${cnt++} ${key} ${value}\n`
         }
-        LOG('saving...(overwriting)')
+        LOG(`saving...(overwriting) ${simplePath2}`)
         fs.writeFileSync(simplePath2, `${simpleTimeOffset}\nidx sTime eTime counts\n`)
         fs.appendFileSync(simplePath2, saveStr)
 
@@ -243,5 +232,93 @@ async function run() {
 	LOG('  =======  done  ======')
 }
 
-init()
-run()
+async function processMulti(transactionHash, startTime) {
+
+    let txResults = await web3.eth.getTransactionReceipt(transactionHash)
+    if (txResults == undefined || txResults == null) {
+        //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
+        console.log(` *** tx: ${transactionHash} -> Dropped`)
+        dropped++
+    }
+    else {
+        //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${JSON.stringify(txResults)}`)
+        if (txResults.status == true) {
+            // console.log(` *** tx: ${transactionHash} -> Seccess`)
+            success++
+
+            if (minSendTime == 0) {
+                minSendTime = startTime
+            }
+
+            let settleTime = 0
+            if (map.has(txResults.blockNumber) == false) {
+                results = await web3.eth.getBlock(txResults.blockHash)
+                settleTime = results.timestamp * 1000
+                if (map.has(txResults.blockNumber) == false) {
+                    map.set(txResults.blockNumber, settleTime)
+                }
+            }
+            else {
+                settleTime = map.get(txResults.blockNumber)
+            }
+            
+            update(startTime, settleTime, transactionHash)
+        }
+        else {
+            console.log(` *** tx: ${transactionHash} -> Reverted`)
+            // Why ??
+            reverted++
+        }
+    }
+}
+
+
+function update(_startTime, _settleTime, _transactionHash, _blockNumber) {
+
+    let timeOffset = _settleTime - _startTime
+    if (timeOffset > maxOffset) {
+        maxOffset = timeOffset
+    }
+    if (timeOffset < minOffset) {
+        minOffset = timeOffset
+    }
+
+    if (maxBlockNum < _blockNumber) {
+        maxBlockNum = _blockNumber
+        maxSettleTime = settleTime
+    }
+    if (minBlockNum > _blockNumber) {
+        minBlockNum = _blockNumber
+    }
+
+    // sendTime, blockTime, 반영시간, txid ?
+    fs.appendFileSync(resultPath, `${_startTime} ${_settleTime} ${timeOffset} ${_transactionHash}\n`)
+
+    let stx = parseInt((_startTime - simpleTimeOffset) / 10)
+    let etx = parseInt((_settleTime - simpleTimeOffset) / 10)
+
+    let timeStr = `${stx} ${etx}`
+    if (timeMap.has(timeStr) == false) {
+        timeMap.set(timeStr, 1)
+    }
+    else {
+        let cntValue = timeMap.get(timeStr)
+        timeMap.set(timeStr, cntValue+1)
+    }
+    
+    let stx2 = parseInt(stx / 10)
+    let etx2 = parseInt(etx / 10)
+
+    let timeStr2 = `${stx2} ${etx2}`
+    if (timeMap2.has(timeStr2) == false) {
+        timeMap2.set(timeStr2, 1)
+    }
+    else {
+        let cntValue2 = timeMap2.get(timeStr2)
+        timeMap2.set(timeStr2, cntValue2+1)
+    }
+}
+
+init().then(() => {
+    return run()
+})

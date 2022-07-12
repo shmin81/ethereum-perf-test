@@ -160,7 +160,7 @@ async function run() {
         fs.writeFileSync(resultPath, resultStr+`\n===================\n${tpsResultStr}`)
 
         LOG(`saving...(overwriting) ${resultPath2}`)
-        fs.writeFileSync(resultPath2, resultStr+`\n===================\n${tpsResultStr2}`)
+        fs.writeFileSync(resultPath2, resultStr2)
 
         LOG(`saving... (updating) ${refPath}`)
         fs.appendFileSync(refPath, `${tpsResultStr}\n`)

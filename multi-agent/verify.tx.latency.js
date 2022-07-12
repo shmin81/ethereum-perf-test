@@ -185,7 +185,7 @@ async function run() {
                         settleTime = map.get(txResults.blockNumber)
                     }
                     
-                    update(startTime, settleTime, transactionHash)
+                    update(startTime, settleTime, transactionHash, txResults.blockNumber)
 
                 }
                 else {
@@ -262,7 +262,7 @@ async function processMulti(transactionHash, startTime) {
                 settleTime = map.get(txResults.blockNumber)
             }
             
-            update(startTime, settleTime, transactionHash)
+            update(startTime, settleTime, transactionHash, txResults.blockNumber)
         }
         else {
             console.log(` *** tx: ${transactionHash} -> Reverted`)
@@ -285,7 +285,7 @@ function update(_startTime, _settleTime, _transactionHash, _blockNumber) {
 
     if (maxBlockNum < _blockNumber) {
         maxBlockNum = _blockNumber
-        maxSettleTime = settleTime
+        maxSettleTime = _settleTime
     }
     if (minBlockNum > _blockNumber) {
         minBlockNum = _blockNumber

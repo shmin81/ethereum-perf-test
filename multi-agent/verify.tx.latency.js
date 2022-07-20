@@ -27,13 +27,15 @@ if (args[2] != undefined) {
     project_id = Math.abs(project_id)
 }
 
-let resultDatas = `\n*** ${new Date().toISOString()} ***\n*** ${transactionLogPath} ***\n`
+let startTime = new Date()
+let resultDatas = `\n*** ${startTime.toISOString()} ***\n*** ${transactionLogPath} ***\n`
 
 let httpRpcUrl = ''
 let lines = null
 let web3 = null
 
 let map = new Map();
+let txMap = new Map();
 let timeMap = new Map();
 let timeMap2 = new Map();
 let simpleTimeOffset = 0
@@ -148,7 +150,7 @@ async function run() {
             const txInfos = getObjFromStr(i++)
             if (txInfos == null) continue
             let transactionHash = txInfos[1]
-
+            //console.log(i, transactionHash)
             if (simpleTimeOffset == 0) {
                 simpleTimeOffset = Number(txInfos[0]) - 200
             }
@@ -158,19 +160,17 @@ async function run() {
                 LOG(` * ${project_id} [${progressNow}%] transactionHash: ${transactionHash}`)
                 progress = progressNow
             }
-            
-            if (minSendTime > 0 && (allLines - i) > 100 && progressNow <= 95 ) {
-                for (let j=0; j<4;j++) {
-                    let txInfos1 = getObjFromStr(i++)
-                    if (txInfos1 != null) {
-                        //console.log(i, txInfos1[1])
-                        processMulti(txInfos1[1], Number(txInfos1[0]))
-                    }
-                }
+
+            if (txMap.has(transactionHash)) {
+                let startTime = Number(txInfos[0])
+                let settleTime = txMap.get(transactionHash)
+                update(startTime, settleTime, transactionHash)
+                success++
+                continue
             }
-            
+
             let txResults = await web3.eth.getTransactionReceipt(transactionHash)
-            
+
             if (txResults == undefined || txResults == null) {
                 //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
                 console.log(` * tx: ${transactionHash} -> Dropped`)
@@ -188,11 +188,11 @@ async function run() {
                     }
 
                     let settleTime = 0
-                    if (map.has(txResults.blockNumber) == false) {
+                    if (txMap.has(transactionHash) == false) {
                         
-                        results = await web3.eth.getBlock(txResults.blockHash)
-                        
-                        settleTime = results.timestamp * 1000
+                        settleTime = await getBlockTx(txResults.blockHash)
+                        //results = await web3.eth.getBlock(txResults.blockHash, true)
+                        //settleTime = results.timestamp * 1000
                         if (map.has(txResults.blockNumber) == false) {
                             map.set(txResults.blockNumber, settleTime)
                             updateBlock(txResults.blockNumber, settleTime)
@@ -201,14 +201,15 @@ async function run() {
                     else {
                         settleTime = map.get(txResults.blockNumber)
                     }
-                    
-                    update(startTime, settleTime, transactionHash, txResults.blockNumber)
 
+                    update(startTime, settleTime, transactionHash)
                 }
                 else {
                     console.log(` * tx: ${transactionHash} -> Reverted`)
                     // Why ??
                     reverted++
+                    // test is failed??
+                    process.exit(2)
                 }
             }
         }
@@ -252,48 +253,27 @@ async function run() {
     catch (err) {
 		LOG(err); 
 	}
-	LOG('  =======  done  ======')
+    console.log(startTime.toISOString())
+    console.log((new Date()).toISOString())
+	LOG(` =======  done [${(new Date()) - startTime}ms] ======`)
 }
 
-async function processMulti(transactionHash, startTime) {
 
-    let txResults = await web3.eth.getTransactionReceipt(transactionHash)
-    if (txResults == undefined || txResults == null) {
-        //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${txResults}`)
-        console.log(` *** tx: ${transactionHash} -> Dropped`)
-        dropped++
-    }
-    else {
-        //LOG(`eth_getTransactionReceipt(${transactionHash}) => ${JSON.stringify(txResults)}`)
-        if (txResults.status == true) {
-            // console.log(` *** tx: ${transactionHash} -> Seccess`)
-            success++
+function getBlockTx(_blockHash) {
 
-            if (minSendTime == 0) {
-                minSendTime = startTime
+    return new Promise(function(resolve, reject) {
+        web3.eth.getBlock(_blockHash)
+        .then(res => {
+            let settleTxTime = res.timestamp * 1000
+            LOG(`getBlockTx(${_blockHash}) timestamp:${res.timestamp}, txCnt: ${res.transactions.length}`)
+            for(let tx of res.transactions) {
+                txMap.set(tx, settleTxTime)
             }
-
-            let settleTime = 0
-            if (map.has(txResults.blockNumber) == false) {
-                results = await web3.eth.getBlock(txResults.blockHash)
-                settleTime = results.timestamp * 1000
-                if (map.has(txResults.blockNumber) == false) {
-                    map.set(txResults.blockNumber, settleTime)
-                    updateBlock(txResults.blockNumber, settleTime)
-                }
-            }
-            else {
-                settleTime = map.get(txResults.blockNumber)
-            }
-            
-            update(startTime, settleTime, transactionHash, txResults.blockNumber)
-        }
-        else {
-            console.log(` *** tx: ${transactionHash} -> Reverted`)
-            // Why ??
-            reverted++
-        }
-    }
+            resolve(settleTxTime)
+        }).catch(err => {
+            reject(err)
+        })
+    })
 }
 
 function updateBlock(_blockNumber, _settleTime) {

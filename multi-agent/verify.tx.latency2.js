@@ -5,11 +5,11 @@ const Web3 = require('web3')
 
 const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
 
-const resultPath = './verify.tx.results.latency.log'
-const simplePath = './verify.tx.results.latency.simple.full.log'
-const simplePath1 = './verify.tx.results.latency.simple.10ms.log'
-const simplePath2 = './verify.tx.results.latency.simple.100ms.log'
-const refPath = './verify.tx.results.latency.ref.log'
+const resultPath = './verify.results.tx.latency.log'
+const simplePath = './verify.results.tx.latency.simple.full.log'
+const simplePath1 = './verify.results.tx.latency.simple.10ms.log'
+const simplePath2 = './verify.results.tx.latency.simple.100ms.log'
+const refPath = './verify.results.tx.latency.ref.log'
 
 let lines = null
 

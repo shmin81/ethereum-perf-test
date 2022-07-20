@@ -32,6 +32,6 @@ node verify.block.js  $configPath
 
 echo 'move results'
 mv test.*.log ./$testName/
-mv verify.tx.results.* ./$testName/
+mv verify.results.*.log ./$testName/
 
 echo 'done.'

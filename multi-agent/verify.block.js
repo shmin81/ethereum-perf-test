@@ -3,9 +3,9 @@ const fs = require("fs");
 const utils = require('../common/utils')
 const Web3 = require('web3')
 
-const refPath = './verify.tx.results.latency.ref.log'
-const resultPath = './verify.tx.results.block.sender.log'
-const resultPath2 = './verify.tx.results.block.tps.log'
+const refPath = './verify.results.tx.latency.ref.log'
+const resultPath = './verify.results.block.tx.sender.log'
+const resultPath2 = './verify.results.block.tps.log'
 const LOG = (msg) =>  {
     console.log(new Date().toISOString(), msg)
 }

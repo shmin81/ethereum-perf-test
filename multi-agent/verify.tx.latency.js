@@ -12,11 +12,11 @@ if (args[0] == undefined || args[0].indexOf('help') != -1) {
     process.exit(2);
 }
 
-const resultPath = './verify.tx.results.latency.log'
-const refPath = './verify.tx.results.latency.ref.log'
-const simplePath = './verify.tx.results.latency.simple1.log'
-const simplePath2 = './verify.tx.results.latency.simple2.log'
-const resultPath2 = './verify.tx.results.block.tps.log'
+const resultPath = './verify.results.tx.latency.log'
+const refPath = './verify.results.tx.latency.ref.log'
+const simplePath = './verify.results.tx.latency.simple1.log'
+const simplePath2 = './verify.results.tx.latency.simple2.log'
+const resultPath2 = './verify.results.block.tps.log'
 
 const confPath = args[0]
 const conf = utils.loadConf(confPath)
@@ -253,11 +253,11 @@ async function run() {
     catch (err) {
 		LOG(err); 
 	}
-    console.log(startTime.toISOString())
-    console.log((new Date()).toISOString())
-	LOG(` =======  done [${(new Date()) - startTime}ms] ======`)
+    let endTime = new Date()
+    //console.log(startTime.toISOString())
+    //console.log(endTime.toISOString())
+	LOG(` =======  done [working time: ${endTime - startTime} ms] ======`)
 }
-
 
 function getBlockTx(_blockHash) {
 

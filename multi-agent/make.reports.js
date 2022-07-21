@@ -111,16 +111,29 @@ async function mainTest() {
 
     resultCode = await nextProcess(cntt++)
     INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
+    if (resultCode > 0) {
+      // 종료한다.
+      process.exit()
+    }
 
     resultCode = await finalProcess(cntt++)
     INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
 
+    if (fs.existsSync(`./${projectName}.old`)) {
+      let rfiles = fs.readdirSync(`./${projectName}.old`)
+      for (let j=0; j<rfiles.length; j++) {
+        fs.unlinkSync(`./${projectName}.old/${rfiles[j]}`)
+      }
+      fs.rmdirSync(`./${projectName}.old`)
+    }
+
     if (fs.existsSync(`./${projectName}`)) {
       fs.renameSync(`./${projectName}`, `./${projectName}.old`)
     }
+    
     INFO(`copying to ./${projectName}`)
     fs.mkdirSync(projectName)
-    let rfiles = fs.readdirSync(__dirname);
+    let rfiles = fs.readdirSync(__dirname)
     for (let j=0; j<rfiles.length; j++) {
       let ff = rfiles[j]
       if (ff.startsWith('verify.results.') && ff.endsWith('.log')) {

@@ -21,6 +21,10 @@ function init() {
     let contents = fs.readFileSync(resultPath).toString()
     lines = contents.split(/\r\n|\n/)
     console.log(`items: ${lines.length - 2}(?)`)
+    if (lines.length < 5) {
+        console.error('Too small datas')
+        process.exit(2)
+    }
 }
 
 async function run() {

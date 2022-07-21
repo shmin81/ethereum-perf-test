@@ -57,12 +57,23 @@ function newProcess(id, portNum, minerIdx, accountIdx) {
   childs.push(process2)
   
   process2.stderr.on('data', function(data) {
-      //let dataStr = data.toString();
       ERROR(`[${id}] ${data}`)
       exitAll()
   });
   process2.stdout.on('data', function(data) {
-      INFO(`[${id}] ${data}`)
+      let dataStr = data.toString();
+      if (dataStr.startsWith('[SYSCMD] ')){
+        let strs = dataStr.split()
+        if (statusReporting) {
+          console.log(`${new Date().toISOString()} [WARN] The other reporting is running ... (=> ${dataStr} is not run.)`)
+        }
+        else {
+          runMakeReport(strs[1], id)
+        }
+      }
+      else {
+        INFO(`[${id}] ${dataStr}`)
+      }
   });
   process2.on('exit', function(code) {
       runningTask--;
@@ -73,13 +84,42 @@ function newProcess(id, portNum, minerIdx, accountIdx) {
   })
 }
 
+let exitReady = false
 function exitAll() {
   
   childs.forEach(element => {
     INFO(`[pid:${element.pid}] ${element.spawnargs.join(' ')} -> kill...`)
     element.kill()
   });
-  process.exit(1);
+  if (statusReporting == false) {
+    process.exit(1);
+  }
+  else {
+    exitReady = true
+  }
+}
+
+let statusReporting = false
+const nodeReportScript = 'make.reports.js'
+function runMakeReport(projName, _id) {
+
+  INFO(`[${_id}] run report process => node ${nodeReportScript} ${confPath} ${projName}\n`);
+
+  let process3 = spawn("node", [ nodeReportScript, confPath, projName ]);
+  statusReporting = true
+  // 성능을 위해서 로그를 미출력??
+  process3.stderr.on('data', function(data) {
+      console.error(data.toString())
+  })
+  process3.stdout.on('data', function(data) {
+    console.log(data.toString())
+  })
+  process2.on('exit', function(code) {
+    if (exitReady) {
+      process.exit(1);
+    }
+    statusReporting = false
+  })
 }
 
 for (let i=0; i<minerCnt; i++) {

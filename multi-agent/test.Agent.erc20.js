@@ -255,12 +255,29 @@ const serverExit = async (req, res) => {
   process.exit(0)
 }
 
+const controlMsg = async (req, res) => {
+
+  INFO(`/message`)
+  const ps = req.body.params
+  let msg = null
+  if (Array.isArray(ps) && ps.length == 1) {
+    msg = String(ps[0])
+    INFO(`[SYSCMD] ${msg}`)
+  }
+
+  const output = { result: (msg == null ? false : true), message: msg }
+  res.status(200)
+  res.set('Content-Type', 'application/json;charset=utf8')
+  res.json(output)
+}
+
 const router = express.Router()
 router.route('/transfer').post(transfer)
 router.route('/transferMulti').post(transfer2)
 router.route('/transferCount').get(transferCount)
 router.route('/serverExit').post(serverExit)
 router.route('/serverExit').get(serverExit)
+router.route('/message').post(controlMsg)
 
 app.use('/', router)
 app.all('*', (req, res) => res.status(404).end())

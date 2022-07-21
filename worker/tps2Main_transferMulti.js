@@ -4,6 +4,7 @@ const spawn = require("child_process").spawn;
 const utils = require('../common/utils')
 
 const INFO = (msg) => console.log(`${new Date().toISOString()} [INFO] ${msg}`)
+const INFOSUB = (msg) => process.stdout.write(`${new Date().toISOString()} [INFO] ${msg}`)
 const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}`)
 
 // 장기간 실행중 실행 간격을 변경하거나 실행을 종료하고자 할 경우, 이 파일의 값을 수정
@@ -62,7 +63,7 @@ function updateStatus() {
     if (Date.now() > startTime) {
         remained--;
     }
-    if (remained < 1) {
+    if (remained < 0) {
         remained = 0
         fs.writeFileSync(confPath, remained.toString());
     }
@@ -93,7 +94,7 @@ function newProcess(id, agentRpc) {
       setTimeout(exitAll, 1000)
   });
   process2.stdout.on('data', function(data) {
-      INFO(`[${id}] ${data}`)
+    INFOSUB(`[${id}] ${data}`)
   });
   process2.on('exit', function(code) {
       runningTask--;

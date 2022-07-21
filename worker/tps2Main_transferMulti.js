@@ -97,6 +97,9 @@ function newProcess(id, agentRpc) {
   });
   process2.on('exit', function(code) {
       runningTask--;
+      if (exitCode == -1){
+        exitCode = code
+      }
       //let msg = `${(new Date()).toISOString()} [${id}] exit [code: ${code}] -> ${runningTask} task remained.`;
       //console.log(msg);
       if (chkTimerId != null) {
@@ -106,16 +109,18 @@ function newProcess(id, agentRpc) {
       setTimeout(exitAll, 2000)
   })
 }
-
+let exitCode = -1
 function exitAll() {
 
   if (runningTask > 0) {
     childs.forEach(element => {
-        INFO(`[pid:${element.pid}] ${element.spawnargs.join(' ')} -> kill...`)
-        element.kill()
+        if (element.killed == false) {
+            INFO(`[pid:${element.pid}] ${element.spawnargs.join(' ')} -> kill...`)
+            element.kill()
+        }
     });
   }
-  process.exit(1);
+  process.exit(exitCode);
 }
 
 let chkTimerId = null;

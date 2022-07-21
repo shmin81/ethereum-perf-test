@@ -7,6 +7,7 @@ const spawn = require("child_process").spawn;
 const utils = require('../common/utils')
 
 const INFO = (msg) => console.log(`${new Date().toISOString()} [INFO] ${msg}`)
+const INFOSUB = (msg) => process.stdout.write(`${new Date().toISOString()} [INFO] ${msg}`)
 const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}`)
 
 const args = process.argv.slice(2)
@@ -62,7 +63,7 @@ function newProcess(id, portNum, minerIdx, accountIdx) {
   });
   process2.stdout.on('data', function(data) {
       let dataStr = data.toString();
-      INFO(`[${id}] ${dataStr}`)
+      INFOSUB(`[${id}] ${dataStr}`)
       if (dataStr.indexOf('[SYSCMD]') != -1) {
         let lines = dataStr.split('\n')
         for (let line of lines) {
@@ -91,8 +92,10 @@ let exitReady = false
 function exitAll() {
   
   childs.forEach(element => {
-    INFO(`[pid:${element.pid}] ${element.spawnargs.join(' ')} -> kill...`)
-    element.kill()
+    if (element.killed == false) {
+      INFO(`[pid:${element.pid}] ${element.spawnargs.join(' ')} -> kill...`)
+      element.kill()
+    }
   });
   if (statusReporting == false) {
     process.exit(1);
@@ -112,12 +115,13 @@ function runMakeReport(projName, _id) {
   statusReporting = true
   // 성능을 위해서 로그를 미출력??
   process3.stderr.on('data', function(data) {
-      console.error(data.toString())
+      ERROR(data.toString())
   })
-  process3.stdout.on('data', function(data) {
-    console.log(data.toString())
-  })
+  /*process3.stdout.on('data', function(data) {
+    INFOSUB(data.toString())
+  })*/
   process3.on('exit', function(code) {
+    INFO(`reporting done.`)
     if (exitReady) {
       process.exit(1);
     }

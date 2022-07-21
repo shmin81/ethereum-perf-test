@@ -62,17 +62,20 @@ function newProcess(id, portNum, minerIdx, accountIdx) {
   });
   process2.stdout.on('data', function(data) {
       let dataStr = data.toString();
-      if (dataStr.startsWith('[SYSCMD] ')){
-        let strs = dataStr.split()
-        if (statusReporting) {
-          console.log(`${new Date().toISOString()} [WARN] The other reporting is running ... (=> ${dataStr} is not run.)`)
+      INFO(`[${id}] ${dataStr}`)
+      if (dataStr.indexOf('[SYSCMD]') != -1) {
+        let lines = dataStr.split('\n')
+        for (let line of lines) {
+          if (line.startsWith('[SYSCMD]')){
+            let strs = line.split(' ')
+            if (statusReporting) {
+              console.log(`${new Date().toISOString()} [WARN] The other reporting is running ... (=> ${line} is not run.)`)
+            }
+            else {
+              runMakeReport(strs[1], id)
+            }
+          }
         }
-        else {
-          runMakeReport(strs[1], id)
-        }
-      }
-      else {
-        INFO(`[${id}] ${dataStr}`)
       }
   });
   process2.on('exit', function(code) {
@@ -114,7 +117,7 @@ function runMakeReport(projName, _id) {
   process3.stdout.on('data', function(data) {
     console.log(data.toString())
   })
-  process2.on('exit', function(code) {
+  process3.on('exit', function(code) {
     if (exitReady) {
       process.exit(1);
     }

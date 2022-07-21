@@ -168,9 +168,8 @@ const transfer = async (req, res) => {
 
 const transfer2 = async (req, res) => {
  
-  let ps = req.body.params
   let multiCnt = 2
-  //console.log('request params:', ps.length, ps)
+  let ps = getParams(req.body)
   if (Array.isArray(ps) && ps.length > 0) {
     multiCnt = Number(ps[0])
     //DEBUG(`params[0]: ${multiCnt} from [${ps[0]} ${typeof(ps[0])}]`)
@@ -258,9 +257,9 @@ const serverExit = async (req, res) => {
 const controlMsg = async (req, res) => {
 
   INFO(`/message`)
-  const ps = req.body.params
   let msg = null
-  if (Array.isArray(ps) && ps.length == 1) {
+  let ps = getParams(req.body)
+  if (Array.isArray(ps)) {
     msg = String(ps[0])
     INFO(`[SYSCMD] ${msg}`)
   }
@@ -269,6 +268,22 @@ const controlMsg = async (req, res) => {
   res.status(200)
   res.set('Content-Type', 'application/json;charset=utf8')
   res.json(output)
+}
+
+function getParams(_reqBody) {
+  if (_reqBody.params != undefined) {
+    return _reqBody.params
+  }
+  //console.log('body1', _reqBody)
+  let bodyStr = JSON.stringify(_reqBody)
+  //console.log('body2', bodyStr, bodyStr.lastIndexOf('['), bodyStr.lastIndexOf(']'))
+  let budyStrSub = bodyStr.substring(bodyStr.lastIndexOf('[')+3, bodyStr.lastIndexOf(']')-2)
+  //console.log('body3', budyStrSub)
+  if (budyStrSub.indexOf(',') > -1) {
+    // param은 1개만 존재해야 됨
+    return undefined  
+  }
+  return [ budyStrSub ]
 }
 
 const router = express.Router()

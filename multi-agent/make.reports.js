@@ -4,7 +4,10 @@ const spawn = require("child_process").spawn;
 const utils = require('../common/utils')
 
 const INFO = (msg) => console.log(msg)
+const INFOSUB = (msg) => { if (debug) console.log(msg) }
 const ERROR = (msg) => console.error(`[ERROR] ${msg}`)
+
+const debug=false
 
 let startTime = new Date()
 const args = process.argv.slice(2)
@@ -31,16 +34,16 @@ function firstProcess(id, inputConf) {
   INFO(`[${id}] new test process => node ${nodeScript} ${confPath}\n`);
 
   return new Promise(function(resolve, reject) {
-    let process2 = spawn("node", [ nodeScript, confPath, inputConf, id ]);
+    let process1 = spawn("node", [ nodeScript, confPath, inputConf, id ]);
     
-    process2.stderr.on('data', function(data) {
-        ERROR(data.toString())
+    process1.stderr.on('data', function(data) {
+        ERROR(data)
         reject(false)
     });
-    process2.stdout.on('data', function(data) {
-        INFO(data.toString())
+    process1.stdout.on('data', function(data) {
+        INFOSUB(data)
     });
-    process2.on('exit', function(code) {
+    process1.on('exit', function(code) {
       resolve(code)
     })
   })
@@ -55,11 +58,11 @@ async function nextProcess(id) {
     let process2 = spawn("node", [ 'verify.tx.latency2.js' ]);
     
     process2.stderr.on('data', function(data) {
-        ERROR(data.toString())
+        ERROR(data)
         reject(false)
     });
     process2.stdout.on('data', function(data) {
-        INFO(data.toString())
+        INFOSUB(data)
     });
     process2.on('exit', function(code) {
         resolve(code)
@@ -73,16 +76,16 @@ async function finalProcess(id) {
 
   return new Promise(function(resolve, reject) {
 
-    let process2 = spawn("node", [ 'verify.block.js', confPath ]);
+    let process3 = spawn("node", [ 'verify.block.js', confPath ]);
     
-    process2.stderr.on('data', function(data) {
-        ERROR(data.toString())
+    process3.stderr.on('data', function(data) {
+        ERROR(data)
         reject(false)
     });
-    process2.stdout.on('data', function(data) {
-        INFO(data.toString())
+    process3.stdout.on('data', function(data) {
+        INFOSUB(data)
     });
-    process2.on('exit', function(code) {
+    process3.on('exit', function(code) {
         resolve(code)
     })
   })
@@ -91,6 +94,7 @@ async function finalProcess(id) {
 async function mainTest() {
   let files = fs.readdirSync(__dirname);
   let cntt = 0
+  let errCode = 0
   try {
     let cfiles = fs.readdirSync(__dirname);
     for (let j=0; j<cfiles.length; j++) {
@@ -104,8 +108,8 @@ async function mainTest() {
     for (let i=0; i<files.length; i++) {
       let ff = files[i]
       if (ff.startsWith('test.') && ff.endsWith('.log')) {
-      resultCode = await firstProcess(cntt++, files[i])
-      INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
+        resultCode = await firstProcess(cntt++, files[i])
+        INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
       }
     }
 
@@ -113,7 +117,7 @@ async function mainTest() {
     INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
     if (resultCode > 0) {
       // 종료한다.
-      process.exit()
+      process.exit(1)
     }
 
     resultCode = await finalProcess(cntt++)
@@ -145,9 +149,11 @@ async function mainTest() {
     }
   }
   catch(err) {
-      ERROR(`Failed(${cntt}) - ${err}`)
+      ERROR(`Failed(${cntt} step) - ${err}`)
+      errCode=1
   }
   INFO(`[${new Date().toISOString()}] done [running tims: ${(new Date()) - startTime} ms]`)
+  process.exit(errCode)
 }
 
 mainTest()

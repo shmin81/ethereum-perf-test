@@ -69,17 +69,11 @@ function newProcess(id, portNum, minerIdx, accountIdx) {
         for (let line of lines) {
           if (line.startsWith('[SYSCMD]')){
             let strs = line.split(' ')
-            if (strs[1].toLowerCase() === 'restartnodes') {
-              restartMode = true
-              exitAll()
+            if (statusReporting) {
+              console.log(`${new Date().toISOString()} [WARN] The other reporting is running ... (=> ${line} is not run.)`)
             }
             else {
-              if (statusReporting) {
-                console.log(`${new Date().toISOString()} [WARN] The other reporting is running ... (=> ${line} is not run.)`)
-              }
-              else {
-                runMakeReport(strs[1], id)
-              }
+              runMakeReport(strs[1], id)
             }
           }
         }
@@ -87,10 +81,6 @@ function newProcess(id, portNum, minerIdx, accountIdx) {
   });
   process2.on('exit', function(code) {
       runningTask--;
-      const idx = childs.indexOf(process2)
-      if (idx > -1) { 
-        childs.splice(idx, 1)
-      }
       let now = new Date();
       let msg = `${now.toISOString()} [${id}] exit [code: ${code}] -> ${runningTask} task remained.`;
       console.log(msg);
@@ -99,7 +89,6 @@ function newProcess(id, portNum, minerIdx, accountIdx) {
 }
 
 let exitReady = false
-let restartMode = false
 function exitAll() {
   
   childs.forEach(element => {
@@ -108,14 +97,6 @@ function exitAll() {
       element.kill()
     }
   });
-
-  if (restartMode) {
-    if (childs.length == 0) {
-      restartMode = false
-      main()
-    }
-    return
-  }
   if (statusReporting == false) {
     process.exit(1);
   }
@@ -132,14 +113,13 @@ function runMakeReport(projName, _id) {
 
   let process3 = spawn("node", [ nodeReportScript, confPath, projName ]);
   statusReporting = true
-
+  // 성능을 위해서 로그를 미출력??
   process3.stderr.on('data', function(data) {
       ERROR(data.toString())
   })
-  process3.stdout.on('data', function(data) {
-    // 성능을 위해서 로그를 미출력??
+  /*process3.stdout.on('data', function(data) {
     INFOSUB(data.toString())
-  })
+  })*/
   process3.on('exit', function(code) {
     INFO(`reporting done.`)
     if (exitReady) {
@@ -149,10 +129,6 @@ function runMakeReport(projName, _id) {
   })
 }
 
-function main() {
-  for (let i=0; i<minerCnt; i++) {
-    newProcess(i, conf.startPortNumber+i, i, i*conf.numberOfAccounts+conf.startAccountIdx)
-  }
+for (let i=0; i<minerCnt; i++) {
+  newProcess(i, conf.startPortNumber+i, i, i*conf.numberOfAccounts+conf.startAccountIdx)
 }
-
-main()

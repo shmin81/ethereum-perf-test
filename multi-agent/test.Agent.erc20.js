@@ -279,6 +279,11 @@ function getParams(_reqBody) {
   //console.log('body2', bodyStr, bodyStr.lastIndexOf('['), bodyStr.lastIndexOf(']'))
   let budyStrSub = bodyStr.substring(bodyStr.lastIndexOf('[')+3, bodyStr.lastIndexOf(']')-2)
   //console.log('body3', budyStrSub)
+
+  if (budyStrSub.length < 4) {
+    // param data length
+    return undefined  
+  }
   if (budyStrSub.indexOf(',') > -1) {
     // param은 1개만 존재해야 됨
     return undefined  

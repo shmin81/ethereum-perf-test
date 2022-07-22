@@ -123,7 +123,8 @@ exports.sendHttp = function (req) {
     return new Promise(function(resolve, reject) {
         httpRequest.post(req)
             .then(response => {
-                if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                //if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                if (response.body.error == undefined && response.body.result !== undefined) {
                     resolve(response.body.result)
                 }
                 else {

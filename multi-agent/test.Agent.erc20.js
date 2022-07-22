@@ -254,10 +254,10 @@ const txpool = async (req, res) => {
     res.json(output)
   }
   catch (err) {
-    ERROR(`It SHOULD NOT happen! - ${err}`)
+    ERROR(`It SHOULD NOT happen! - ${JSON.stringify(err)}`)
     res.status(500)
     res.set('Content-Type', 'application/json;charset=utf8')
-    res.json({ result: false, req, send:reqTxpool, error: `${err}` })
+    res.json({ result: false, req, send:reqTxpool, error: err })
     //process.exit(1)
   }
 }

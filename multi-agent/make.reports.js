@@ -3,9 +3,10 @@ const fs = require('fs')
 const spawn = require("child_process").spawn;
 const utils = require('../common/utils')
 
+let projectName = 'testX'
 const INFO = (msg) => console.log(msg)
 const INFOSUB = (msg) => { if (debug) console.log(msg) }
-const ERROR = (msg) => console.error(`[ERROR] ${msg}`)
+const ERROR = (msg) => console.error(`[${projectName}] ${msg}`)
 
 const debug=false
 
@@ -18,7 +19,6 @@ if (args.length == 0) {
 const confPath = args[0]
 const conf = utils.loadConf(confPath) // check test
 
-let projectName = 'testX'
 if (args[1] != undefined && args[1] != null) {
   projectName = args[1]
 }
@@ -31,7 +31,7 @@ if (fs.existsSync(nodeScript) == false) {
 
 function firstProcess(id, inputConf) {
 
-  INFO(`[${id}] new test process => node ${nodeScript} ${confPath}\n`);
+  INFO(`*${id}* new process => node ${nodeScript} ${confPath}`);
 
   return new Promise(function(resolve, reject) {
     let process1 = spawn("node", [ nodeScript, confPath, inputConf, id ]);
@@ -51,7 +51,7 @@ function firstProcess(id, inputConf) {
 
 async function nextProcess(id) {
 
-  INFO(`[${id}] new test process => node verify.tx.latency2.js\n`);
+  INFO(`*${id}* new process => node verify.tx.latency2.js`);
 
   return new Promise(function(resolve, reject) {
 
@@ -72,7 +72,7 @@ async function nextProcess(id) {
 
 async function finalProcess(id) {
 
-  INFO(`[${id}] new test process => node verify.block.js\n`);
+  INFO(`*${id}* new process => node verify.block.js`);
 
   return new Promise(function(resolve, reject) {
 
@@ -108,19 +108,19 @@ async function mainTest() {
     for (let i=0; i<files.length; i++) {
       let ff = files[i]
       if (ff.startsWith('test.') && ff.endsWith('.log')) {
-        resultCode = await firstProcess(cntt++, files[i])
+        resultCode = await firstProcess(++cntt, files[i])
         INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
       }
     }
 
-    resultCode = await nextProcess(cntt++)
+    resultCode = await nextProcess(++cntt)
     INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
     if (resultCode > 0) {
       // 종료한다.
       process.exit(1)
     }
 
-    resultCode = await finalProcess(cntt++)
+    resultCode = await finalProcess(++cntt)
     INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
 
     if (fs.existsSync(`./${projectName}.old`)) {

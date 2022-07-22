@@ -52,7 +52,7 @@ let childs = []
 function newProcess(id, portNum, minerIdx, accountIdx) {
   runningTask++;
   //INFO(`=========================================================`);
-  INFO(`[${id}] new test process => node ${nodeScript} ${portNum} ${minerIdx} ${accountIdx} ${confPath} ${saveLog}\n`);
+  INFO(`[${id}] new agent process => node ${nodeScript} ${portNum} ${minerIdx} ${accountIdx} ${confPath} ${saveLog}`);
 
   let process2 = spawn("node", [ nodeScript, portNum, minerIdx, accountIdx, confPath, saveLog ]);
   childs.push(process2)
@@ -128,7 +128,7 @@ let statusReporting = false
 const nodeReportScript = 'make.reports.js'
 function runMakeReport(projName, _id) {
 
-  INFO(`[${_id}] run report process => node ${nodeReportScript} ${confPath} ${projName}\n`);
+  INFO(`[${_id}] run report process => node ${nodeReportScript} ${confPath} ${projName}`);
 
   let process3 = spawn("node", [ nodeReportScript, confPath, projName ]);
   statusReporting = true
@@ -141,8 +141,9 @@ function runMakeReport(projName, _id) {
     INFOSUB(data.toString())
   })
   process3.on('exit', function(code) {
-    INFO(`reporting done.`)
+    INFO(`${projName} reporting done.`)
     if (exitReady) {
+      INFO(`** exited **`)
       process.exit(1);
     }
     statusReporting = false

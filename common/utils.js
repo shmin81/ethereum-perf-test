@@ -4,12 +4,14 @@ const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}
 const defaultConfigDir = '../configs/'
 let confPath = null
 let confContent = null;
+let conf = null;
 exports.loadConf = function(_confPath) {
 
     confPath = checkPath(_confPath)
     
     confContent = fs.readFileSync(confPath, 'utf8')
-    const conf = JSON.parse(confContent)
+    // const conf = JSON.parse(confContent)
+    conf = JSON.parse(confContent)
 
     if (conf.ownerPrivKey.indexOf('0x') == 0){
         conf.ownerPrivKey = conf.ownerPrivKey.substring(2)
@@ -92,6 +94,28 @@ exports.deployNewDocuContract = function (contractAddress, transactionHash=null)
     let outStr = JSON.stringify(confObj, null, 2)
     fs.writeFileSync(confPath, outStr)
     // log ??
+}
+
+const _request = {
+    method: 'POST',
+    uri: null,
+    json: true,
+    headers: { "Content-Type": "application/json"},
+    resolveWithFullResponse: true,
+    timeout: 5000,
+    body: []
+}
+// http header에 JWT 인증 추가는 개발 필요함.
+exports.getPostRequest = function (_url, _method, _params = [], _id = 1) {
+
+    _request.uri = _url
+    _request.body = {
+        jsonrpc: "2.0",
+        method: _method,
+        params: _params,
+        id: _id
+    }
+    return _request
 }
 
 const httpRequest = require('request-promise')

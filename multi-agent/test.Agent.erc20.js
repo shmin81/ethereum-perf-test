@@ -49,7 +49,7 @@ let acountLock = 0
 let successCount = 0
 
 let txGasLimit = 70000
-
+let httpRpcUrl = null
 // Express
 const app = express()
 app.use((req, res, next) => next())
@@ -242,6 +242,26 @@ const transferCount = async (req, res) => {
   res.json(output)
 }
 
+const txpool = async (req, res) => {
+
+  let reqTxpool = utils.getPostRequest(httpRpcUrl, 'txpool_besuStatistics')
+  try {
+    let resp = await utils.sendHttp(reqTxpool)
+    const output = { result: (resp.localCount + resp.remoteCount) }
+    //INFO(`Success! - ${JSON.stringify(output)}`)
+    res.status(200)
+    res.set('Content-Type', 'application/json;charset=utf8')
+    res.json(output)
+  }
+  catch (err) {
+    ERROR(`It SHOULD NOT happen! - ${err}`)
+    res.status(500)
+    res.set('Content-Type', 'application/json;charset=utf8')
+    res.json({ result: false, req, send:reqTxpool, error: `${err}` })
+    //process.exit(1)
+  }
+}
+
 const serverExit = async (req, res) => {
 
   INFO(`/serverExit`)
@@ -295,6 +315,7 @@ const router = express.Router()
 router.route('/transfer').post(transfer)
 router.route('/transferMulti').post(transfer2)
 router.route('/transferCount').get(transferCount)
+router.route('/txpool').get(txpool)
 router.route('/serverExit').post(serverExit)
 router.route('/serverExit').get(serverExit)
 router.route('/message').post(controlMsg)

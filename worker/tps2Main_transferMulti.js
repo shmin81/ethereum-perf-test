@@ -11,7 +11,7 @@ const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}
 const confPath = 'target_tps.txt'
 
 const nodeScript = './tps2Sub_transferMulti.js'
-const nodeDelayOffset = 100 // 0 ~ 900 (각 process 시작 후, tx send 시작 간격)
+const nodeDelayOffset = 200 // 0 ~ 900 (각 process 시작 후, tx send 시작 간격)
 // #####################################
 
 let agent_ip = 'localhost'

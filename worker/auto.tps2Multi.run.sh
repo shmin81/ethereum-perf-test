@@ -3,8 +3,9 @@
 ############################################
 #  Setting  
 
-testDurationSec=10    # test time (send tx)
-waitUserTimeSec=10    # waiting for interval
+testDurationSec=600    # test time (send tx)
+waitUserTimeSec=240    # waiting for interval
+waitIncreaseSec=30     # waiting for interval
 
 testTpsArr=( 1120 1140 1160 1180 1200 )
 
@@ -40,6 +41,7 @@ function waitIntervalWork {
     echo ''
 
     # sleep time
+    waitUserTimeSec=$(($waitUserTimeSec + $waitIncreaseSec))
     echo 'ready for reporting ... '$waitUserTimeSec 's'
     waitSleep $waitUserTimeSec
 }

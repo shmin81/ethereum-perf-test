@@ -71,9 +71,11 @@ function updateStatus() {
     //INFO(`===== ${chkCnt} updateStatus [${lastIdx}] =====`)
     numTxs.push(lastIdx)
     if (++chkCnt > 4) {
-        let firstIdx = numTxs.shift()    
-        //INFO(`* [${chkCnt}] tx : ${firstIdx}~${lastIdx}, tps(5s) : ${(lastIdx-firstIdx) / 5}, tps(1s) : ${(lastIdx-before)}`)
-        INFO(`* ${chkCnt} seconds... active:${runningItems} tx: ${lastIdx}, tps(5s): ${(lastIdx-firstIdx) / 5}, tps(1s): ${(lastIdx-before)}`)
+        let firstIdx = numTxs.shift()
+        if (remainWorkTime < 20 || (remainWorkTime % 5 == 0)) {
+            //INFO(`* [${chkCnt}] tx : ${firstIdx}~${lastIdx}, tps(5s) : ${(lastIdx-firstIdx) / 5}, tps(1s) : ${(lastIdx-before)}`)
+            INFO(`* ${chkCnt} seconds... active:${runningItems} tx: ${lastIdx}, tps(5s): ${(lastIdx-firstIdx) / 5}, tps(1s): ${(lastIdx-before)}`)
+        }
     }
     before = lastIdx
     
@@ -106,15 +108,12 @@ function updateInterval(_nVal) {
 
     //console.log('read:', data, '-', iVal);
     if (iVal > 0) {
-        if (iVal > 300) {
+        if (iVal >= 400) {
             // too high
+            sendLoopCnt = 10
+        }
+        else if (iVal >= 200) {
             sendLoopCnt = 5
-        }
-        else if (iVal > 200) {
-            sendLoopCnt = 4
-        }
-        else if (iVal > 100) {
-            sendLoopCnt = 3
         }
         else {
             sendLoopCnt = 2
@@ -123,7 +122,7 @@ function updateInterval(_nVal) {
         let newTickInterval = Math.round(sendLoopCnt * 1000 / _nVal)
         if (tickInterval != newTickInterval) {
             tickInterval = newTickInterval
-            INFO(`set -tickInterval: ${tickInterval}, -multi-tx: ${sendLoopCnt}`)
+            INFO(`set -tps: ${_nVal} -tickInterval: ${tickInterval}, -multi-tx: ${sendLoopCnt}`)
             body.params = [ sendLoopCnt ]
         }
     }

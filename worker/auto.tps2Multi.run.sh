@@ -1,5 +1,4 @@
 #!/bin/bash
-# 
 ############################################
 #  Setting  
 
@@ -7,7 +6,8 @@ testDurationSec=600    # test time (send tx)
 waitUserTimeSec=240    # waiting for interval
 waitIncreaseSec=30     # waiting for interval
 
-testTpsArr=( 1120 1140 1160 1180 1200 )
+testTpsArr=( 1000 1050 1100 1150 1200 1250 1300 1350 )
+#testTpsArr=( 1000 1050 1100 1120 1140 1160 1180 1200 1220 1240 1260 1280 1300 1350 )
 
 # testCaseName = $testNamePrefix'_'$testTps'_'$testDurationSec
 testNamePrefix='testA_0'
@@ -15,23 +15,47 @@ testNamePrefix='testA_0'
 confPath='../configs/local.cbdc.test.json'
 confIP='172.19.30.121'
 reportUrl='http://'$confIP':10080/message'
+txpoolUrl='http://'$confIP':10081/txpool'
 ############################################
 
 function waitSleep {
-    step=$(($1/2))
+    step=$(($1/5))
     #echo " *** sleep ("$1" seconds) ***" 
     while [ $step -gt 0 ]
     do
         ((step--))
-        sleep 2
-        prog=$(($step * 200 / $1))
-        echo -ne '##### ('$prog'%) remain to run next test '$(($step*2))' seconds\r'
+        sleep 5
+        prog=$((100 - $step * 500 / $1))
+        echo -ne '##### ('$prog'%) remain to run next test '$(($step*5))' seconds\r'
     done
+}
+
+function checkTxPool {
+    # check tx pool API
+    echo 'check tx pool api'
+    TXSG=$(curl $txpoolUrl)
+    #echo ''
+    echo $TXSG
+    if [[ $TXSG == '{"result":0}' ]] ; then
+        echo 'txpool is empty.'
+    fi
+    if [[ $TXSG != '{"result":0}' ]] ; then
+        echo '[ERROR] txpool is not empty.'
+        exit 1
+    fi
+
+    # restart API
+    echo 'restart agent api'
+    curl -X POST --data '{"jsonrpc":"2.0", "method":"xxx", "params":["restartnodes"], "id":12}' $reportUrl
+    echo ''
+
+    waitSleep 10
 }
 
 function waitIntervalWork {
 
     # sleep time
+    waitUserTimeSec=$(($waitUserTimeSec - $waitIncreaseSec))
     echo 'ready for settle ... '$waitUserTimeSec 's ('$1')'
     waitSleep $waitUserTimeSec
 
@@ -41,13 +65,17 @@ function waitIntervalWork {
     echo ''
 
     # sleep time
-    waitUserTimeSec=$(($waitUserTimeSec + $waitIncreaseSec))
+    waitUserTimeSec=$(($waitUserTimeSec + $waitIncreaseSec + $waitIncreaseSec))
     echo 'ready for reporting ... '$waitUserTimeSec 's'
     waitSleep $waitUserTimeSec
+
+    checkTxPool
 }
 
 # node  temp2Main_single_thread.js "config-path" [ "agent_ip(localhost)" "tps(100tps)" "TestTime(600s) ]"
 # node --max-old-space-size=4096  temp2Main_single_thread.js  ../configs/local.cbdc.test.json  172.19.30.121  400  10
+
+checkTxPool
 
 for varTps in "${testTpsArr[@]}"
 do

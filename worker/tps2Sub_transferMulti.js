@@ -5,11 +5,16 @@ const httpRequest = require('request-promise')
 const INFO = (msg) => console.log(msg)
 const ERROR = (msg) => console.error(msg)
 
+const debug = false  // 정송 TPS 정보를 매초마다 보고 싶을 경우 (default: 20초마다 출력)
+const tpsAllowOffset = 3
+
 // 장기간 실행중 실행 간격을 변경하거나 실행을 종료하고자 할 경우, 이 파일의 값을 수정
 const confPath = 'target_tps.txt'
 
 let isRunning = true
 let tickInterval = 1000
+let maxTps = 0
+let minTps = 0
 let sendLoopCnt = 2
 let numTxs = [ ]
 numTxs.push(0)
@@ -53,7 +58,7 @@ if (args[1] != undefined) {
 
 let remainWorkTime = -1
 if (args[2] != undefined) {
-    remainWorkTime = Number(args[1])
+    remainWorkTime = Number(args[2])
     if (isNaN(remainWorkTime) || remainWorkTime < 1) {
         ERROR(`Wrong input params(working_time): ${args[2]}`)
         process.exit(2)
@@ -67,14 +72,24 @@ let before = 0
 function updateStatus() {
 
     //let lastIdx = reqId
-    let lastIdx = successCount
-    //INFO(`===== ${chkCnt} updateStatus [${lastIdx}] =====`)
+    let lastIdx = sendCount
+    let lastIdx2 = successCount
     numTxs.push(lastIdx)
-    if (++chkCnt > 4) {
+    if (++chkCnt > 9) {
         let firstIdx = numTxs.shift()
-        if (remainWorkTime < 20 || (remainWorkTime % 5 == 0)) {
-            //INFO(`* [${chkCnt}] tx : ${firstIdx}~${lastIdx}, tps(5s) : ${(lastIdx-firstIdx) / 5}, tps(1s) : ${(lastIdx-before)}`)
-            INFO(`* ${chkCnt} seconds... active:${runningItems} tx: ${lastIdx}, tps(5s): ${(lastIdx-firstIdx) / 5}, tps(1s): ${(lastIdx-before)}`)
+        let tps10s = (lastIdx-firstIdx) / 10.0
+
+        // 20초마다 출력
+        if (debug || (remainWorkTime < 6 || (remainWorkTime % 20 == 0))) {
+            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(1s): ${(lastIdx-before)}`)
+        }
+        // response 기준에서 request 기준으로 변경되어 주석처리함
+        // if (runningItems < tpsAllowOffset) {  ...
+        if (tps10s > maxTps) {
+            tickInterval++
+        }
+        else if (tps10s < minTps) {
+            tickInterval--
         }
     }
     before = lastIdx
@@ -105,6 +120,8 @@ function loadInterval() {
 function updateInterval(_nVal) {
 
     let iVal = Math.round(_nVal)
+    maxTps = _nVal + tpsAllowOffset
+    minTps = _nVal - tpsAllowOffset
 
     //console.log('read:', data, '-', iVal);
     if (iVal > 0) {
@@ -146,12 +163,14 @@ const request = {
 
 let reqId = 0
 let successCount = 0
+let sendCount = 0
 async function sendhttp() {
     runningItems++
 
     let requestId = reqId++
     body.id = requestId
     request.body = body
+    sendCount += sendLoopCnt
     //INFO(JSON.stringify(request, null, 2))
     let response = await httpRequest.post(request)
     runningItems--

@@ -161,6 +161,7 @@ async function run() {
                 progress = progressNow
             }
 
+            // Tx가 포함된 block 정보가 없을 경우에만 txReceipt를 확인 (이때에만 success/revert 여부 확인)
             if (txMap.has(transactionHash)) {
                 let startTime = Number(txInfos[0])
                 let settleTime = txMap.get(transactionHash)
@@ -209,16 +210,22 @@ async function run() {
                     // Why ??
                     reverted++
                     // test is failed??
-                    process.exit(2)
+                    // process.exit(2)
+                    // break
                 }
             }
         }
 
         LOG(`==================================`)
+        
         let refStr = `[tx]  success: ${success}  reverted: ${reverted}  dropped: ${dropped}\n`
         refStr += `[tx latency]  min: ${minOffset}  max: ${maxOffset}\n`
         refStr += `[tx time]  send first: ${minSendTime}  settle last: ${maxSettleTime}\n`
         refStr += `[block number]  min: ${minBlockNum}  max: ${maxBlockNum}`
+        if (reverted > 0) {
+            LOG(`[ERROR] found reverted transactions!!!`)
+            refStr += '\n[ERROR] found reverted transactions!!!\n\n'
+        }
         LOG(refStr)
 
         LOG(`saving... (updating) ${refPath}`)

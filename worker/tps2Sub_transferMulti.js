@@ -92,9 +92,11 @@ function updateStatus() {
         // if (runningItems < tpsAllowOffset) {  ...
         if (tps2s > maxTps) {
             tickInterval++
+            console.log('up interval:', tickInterval, "(", tps2s, ")")
         }
         else if (tps2s < minTps) {
             tickInterval--
+            console.log('down interval:', tickInterval, "(", tps2s, ")")
         }
         beforeTps = tps1s
     }
@@ -111,12 +113,14 @@ function updateStatus() {
     }
 }
 
+let savedTps = 'aa'
 function loadInterval() {
     fs.readFile(confPath, 'utf-8', (err, data) => {
         if (err) { console.log('read', confPath, err); }
-        else { 
+        else if (savedTps != data) {
             let nVal = Number(data)
             if (!isNaN(nVal)) {
+                savedTps = data
                 updateInterval(nVal)
             }
         }
@@ -129,7 +133,7 @@ function updateInterval(_nVal) {
     maxTps = _nVal + tpsAllowOffset
     minTps = _nVal - tpsAllowOffset
 
-    //console.log('read:', data, '-', iVal);
+    console.log(' * set tps:', _nVal, "(", minTps, "~", maxTps, ")")
     if (iVal > 0) {
         if (iVal >= 400) {
             // too high

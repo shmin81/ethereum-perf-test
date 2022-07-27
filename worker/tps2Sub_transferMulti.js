@@ -69,6 +69,7 @@ if (args[2] != undefined) {
 let runningItems = 0
 let chkCnt = 0
 let before = 0
+let beforeTps = 0
 function updateStatus() {
 
     //let lastIdx = reqId
@@ -78,19 +79,24 @@ function updateStatus() {
     if (++chkCnt > 9) {
         let firstIdx = numTxs.shift()
         let tps10s = (lastIdx-firstIdx) / 10.0
+        let tps1s = lastIdx-before
+        let tps2s = (beforeTps + tps1s) / 2.0
 
         // 20초마다 출력
         if (debug || (remainWorkTime < 6 || (remainWorkTime % 20 == 0))) {
-            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(1s): ${(lastIdx-before)}`)
+            // INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(1s): ${tps1s}`)
+            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(2s): ${tps2s}, tps(1s): ${tps1s}`)
         }
+        
         // response 기준에서 request 기준으로 변경되어 주석처리함
         // if (runningItems < tpsAllowOffset) {  ...
-        if (tps10s > maxTps) {
+        if (tps2s > maxTps) {
             tickInterval++
         }
-        else if (tps10s < minTps) {
+        else if (tps2s < minTps) {
             tickInterval--
         }
+        beforeTps = tps1s
     }
     before = lastIdx
     
@@ -186,7 +192,8 @@ async function sendhttp() {
     }
 
     ERROR(JSON.stringify(response, null, 2))
-    process.exit(1)
+    // process.exit(1)
+    isRunning = false;
 }
 
 async function eachTest()
@@ -197,6 +204,11 @@ async function eachTest()
         }, tickInterval);
     }
     else {
+        if (runningItems > 0) {
+            let timerIdx2 = setTimeout(function() { 
+                eachTest();
+            }, tickInterval);
+        }
         // 종료시
         let endTime = new Date()
         let offsetTime = (endTime - startTime - tickInterval) / 1000

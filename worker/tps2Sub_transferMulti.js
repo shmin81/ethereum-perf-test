@@ -87,18 +87,18 @@ function updateStatus() {
         // 20초마다 출력
         if (debug || (remainWorkTime < 6 || (remainWorkTime % 20 == 0))) {
             // INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(1s): ${tps1s}`)
-            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps}, tps(10s): ${tps10s.toFixed(1)}, tps(2s): ${tps2s}, tps(1s): ${tps1s}`)
+            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps.toFixed(1)}, tps(10s): ${tps10s}, tps(2s): ${tps2s}, tps(1s): ${tps1s}`)
         }
         
         // response 기준에서 request 기준으로 변경되어 주석처리함
         // if (runningItems < tpsAllowOffset) {  ...
-        if (allTps > maxTps) {
+        if (allTps > maxTps && tps1s > savedTps) {
             tickInterval++
-            console.log('up interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps, ")")
+            console.log('up interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps.toFixed(1), ")")
         }
-        else if (allTps < minTps) {
+        else if (allTps < minTps && tps1s < savedTps) {
             tickInterval--
-            console.log('down interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps, ")")
+            console.log('down interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps.toFixed(1), ")")
         }
         beforeTps = tps1s
     }
@@ -115,14 +115,14 @@ function updateStatus() {
     }
 }
 
-let savedTps = 'aa'
+let savedTps = 0
 function loadInterval() {
     fs.readFile(confPath, 'utf-8', (err, data) => {
         if (err) { console.log('read', confPath, err); }
         else if (savedTps != data) {
             let nVal = Number(data)
             if (!isNaN(nVal)) {
-                savedTps = data
+                savedTps = nVal
                 updateInterval(nVal)
             }
         }

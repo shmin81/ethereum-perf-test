@@ -6,7 +6,7 @@ const INFO = (msg) => console.log(msg)
 const ERROR = (msg) => console.error(msg)
 
 const debug = false  // 정송 TPS 정보를 매초마다 보고 싶을 경우 (default: 20초마다 출력)
-const tpsAllowOffset = 3
+const tpsAllowOffset = 2
 
 // 장기간 실행중 실행 간격을 변경하거나 실행을 종료하고자 할 경우, 이 파일의 값을 수정
 const confPath = 'target_tps.txt'
@@ -69,7 +69,6 @@ if (args[2] != undefined) {
 let runningItems = 0
 let chkCnt = 0
 let before = 0
-let beforeTps = 0
 function updateStatus() {
 
     //let lastIdx = reqId
@@ -82,25 +81,23 @@ function updateStatus() {
         let firstIdx = numTxs.shift()
         let tps10s = (lastIdx-firstIdx) / 10.0
         let tps1s = lastIdx-before
-        let tps2s = (beforeTps + tps1s) / 2.0
 
         // 20초마다 출력
         if (debug || (remainWorkTime < 6 || (remainWorkTime % 20 == 0))) {
             // INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(1s): ${tps1s}`)
-            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps.toFixed(1)}, tps(10s): ${tps10s}, tps(2s): ${tps2s}, tps(1s): ${tps1s}`)
+            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps.toFixed(1)}, tps(10s): ${tps10s}, tps(1s): ${tps1s}`)
         }
         
         // response 기준에서 request 기준으로 변경되어 주석처리함
         // if (runningItems < tpsAllowOffset) {  ...
         if (allTps > maxTps && tps1s > savedTps) {
             tickInterval++
-            console.log('up interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps.toFixed(1), ")")
+            console.log('up interval:', tickInterval, "(", tps1s, tps10s, allTps.toFixed(1), ")")
         }
         else if (allTps < minTps && tps1s < savedTps) {
             tickInterval--
-            console.log('down interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps.toFixed(1), ")")
+            console.log('down interval:', tickInterval, "(", tps1s, tps10s, allTps.toFixed(1), ")")
         }
-        beforeTps = tps1s
     }
     before = lastIdx
     
@@ -202,35 +199,42 @@ async function sendhttp() {
     isRunning = false;
 }
 
+let readyEnd = false
 async function eachTest()
 {
     if (isRunning) {
         let timerId = setTimeout(function() { 
-            eachTest();
-        }, tickInterval);
+            eachTest()
+        }, tickInterval)
+
+        sendhttp()
     }
     else {
-        if (runningItems > 0) {
-            let timerIdx2 = setTimeout(function() { 
-                eachTest();
-            }, tickInterval);
-        }
-        // 종료시
         let endTime = new Date()
         let offsetTime = (endTime - startTime - tickInterval) / 1000
-        INFO(`tx: ${successCount}, tps(avg): ${(successCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
-        //INFO(`end time: ${endTime.toISOString()}`)
 
         if (chkTimerId != null) {
-            clearInterval(chkTimerId);
+            clearInterval(chkTimerId)
+            chkTimerId = null
         }
-        return
+
+        if (runningItems > 0) {
+            let timerIdx2 = setTimeout(function() { 
+                eachTest()
+            }, tickInterval)
+            
+            if (!readyEnd) {  
+                readyEnd = true 
+                INFO(`sended tx: ${sendCount}, tps(avg): ${(sendCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
+            }
+            return
+        }
+        INFO(`processed tx: ${successCount}, tps(avg): ${(successCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
     }
-    sendhttp()
 }
 
 let startTime = null
-let chkTimerId = null;
+let chkTimerId = null
 async function mainTest() {
 
     chkTimerId = setInterval(function() {

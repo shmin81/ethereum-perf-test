@@ -75,6 +75,8 @@ function updateStatus() {
     //let lastIdx = reqId
     let lastIdx = sendCount
     let lastIdx2 = successCount
+    let nowOffset = ((new Date()) - startTime) / 1000
+    let allTps = lastIdx / nowOffset
     numTxs.push(lastIdx)
     if (++chkCnt > 9) {
         let firstIdx = numTxs.shift()
@@ -85,18 +87,18 @@ function updateStatus() {
         // 20초마다 출력
         if (debug || (remainWorkTime < 6 || (remainWorkTime % 20 == 0))) {
             // INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(1s): ${tps1s}`)
-            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(2s): ${tps2s}, tps(1s): ${tps1s}`)
+            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps}, tps(10s): ${tps10s.toFixed(1)}, tps(2s): ${tps2s}, tps(1s): ${tps1s}`)
         }
         
         // response 기준에서 request 기준으로 변경되어 주석처리함
         // if (runningItems < tpsAllowOffset) {  ...
-        if (tps2s > maxTps) {
+        if (allTps > maxTps) {
             tickInterval++
-            console.log('up interval:', tickInterval, "(", tps2s, ")")
+            console.log('up interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps, ")")
         }
-        else if (tps2s < minTps) {
+        else if (allTps < minTps) {
             tickInterval--
-            console.log('down interval:', tickInterval, "(", tps2s, ")")
+            console.log('down interval:', tickInterval, "(", tps1s, tps2s, tps10s, allTps, ")")
         }
         beforeTps = tps1s
     }

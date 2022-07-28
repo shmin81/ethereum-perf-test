@@ -87,6 +87,15 @@ function updateStatus() {
     let nowOffset = ((new Date()) - startTime) / 1000
     let allTps = lastIdx / nowOffset
     numTxs.push(lastIdx)
+
+    if (remainWorkTime !=  -1) {
+        remainWorkTime -= 1
+        if (remainWorkTime == 0) {
+            // 종료 모드
+            isRunning = false;
+        }
+    }
+    
     if (++chkCnt > 4) {
         let firstIdx = numTxs.shift()
         let tps5s = (lastIdx-firstIdx) / 5.0
@@ -97,32 +106,26 @@ function updateStatus() {
             INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps.toFixed(1)}, tps(5s): ${tps5s}, tps(1s): ${tps1s}`)
         }
         
-        // response 기준에서 request 기준으로 변경되어 주석처리함
-        // if (runningItems < tpsAllowOffset) {  ...
-        if (allTps > maxTps && tps1s > savedTps) {
-            tickInterval++
-            if (debug) {
-                INFO(`[${chkCnt}s] tps down -> interval(+): ${tickInterval} (tps: ${allTps.toFixed(1)}, ${tps5s}, ${tps1s})`)
+        if (isRunning) {
+            // response 기준에서 request 기준으로 변경되어 주석처리함
+            // if (runningItems < tpsAllowOffset) {  ...
+            if (allTps > maxTps && tps1s > savedTps) {
+                tickInterval++
+                if (debug) {
+                    INFO(`[${chkCnt}s] tps down -> interval(+): ${tickInterval} (tps: ${allTps.toFixed(1)}, ${tps5s}, ${tps1s})`)
+                }
             }
-        }
-        else if (allTps < minTps && tps1s < savedTps) {
-            tickInterval--
-            if (debug) {
-                INFO(`[${chkCnt}s] tps up -> interval(-): ${tickInterval} (tps: ${allTps.toFixed(1)}, ${tps5s}, ${tps1s})`)
+            else if (allTps < minTps && tps1s < savedTps) {
+                tickInterval--
+                if (debug) {
+                    INFO(`[${chkCnt}s] tps up -> interval(-): ${tickInterval} (tps: ${allTps.toFixed(1)}, ${tps5s}, ${tps1s})`)
+                }
             }
         }
     }
     before = lastIdx
     
     loadInterval()
-
-    if (remainWorkTime !=  -1) {
-        remainWorkTime -= 1
-        if (remainWorkTime == 0) {
-            // 종료 모드
-            isRunning = false;
-        }
-    }
 }
 
 function loadInterval() {
@@ -132,6 +135,11 @@ function loadInterval() {
             let nVal = Number(data)
             if (isNaN(nVal)) {
                 INFO(`[SKIP] wrong data: ${_nVal}`)
+            }
+            else if (nVal == 0) {
+                // 종료 모드
+                isRunning = false;
+                return
             }
             else {
                 savedTps = data

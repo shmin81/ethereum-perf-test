@@ -12,6 +12,7 @@ const tpsAllowOffset = 2
 const confPath = 'target_tps.txt'
 
 let isRunning = true
+let displayLogInterval = 60 // 60 sec
 let tickInterval = 1000
 let maxTps = 0
 let minTps = 0
@@ -28,18 +29,17 @@ const body = {
 
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
-    console.log('Wrong input params - "agent_rpc" [ start_up_time(ms) working_time(s) ]');
-    console.log('  ex) node tps2Sub_single_thread.js http://localhost:10080/transferMulti');
+    INFO('Wrong input params - "agent_rpc" [ start_up_time(ms) working_time(s) ]');
+    INFO('  ex) node tps2Sub_single_thread.js http://localhost:10080/transferMulti');
     process.exit(2);
 }
 
-// loadInterval()
-let tps = fs.readFileSync(confPath)
-if (isNaN(Number(tps))) {
-    ERROR(`wrong ... ${confPath} -> ${tps}`)
-    return
+let savedTps = fs.readFileSync(confPath)
+if (isNaN(Number(savedTps))) {
+    ERROR(`wrong data: '${savedTps}' (${confPath})`)
+    process.exit(2);
 }
-updateInterval(Number(tps))
+updateInterval(Number(savedTps))
 
 const rpcUrl = args[0]
 INFO(rpcUrl)
@@ -64,6 +64,16 @@ if (args[2] != undefined) {
         process.exit(2)
     }
     remainWorkTime = Math.round(remainWorkTime)
+
+    if (remainWorkTime <= 120) {
+        displayLogInterval = 10
+    }
+    else if (remainWorkTime <= 1200) { // 20 minutes
+        displayLogInterval = 20
+    }
+    else if (remainWorkTime < 3600) { // 1 hour
+        displayLogInterval = 30
+    }
 }
 
 let runningItems = 0
@@ -77,26 +87,29 @@ function updateStatus() {
     let nowOffset = ((new Date()) - startTime) / 1000
     let allTps = lastIdx / nowOffset
     numTxs.push(lastIdx)
-    if (++chkCnt > 9) {
+    if (++chkCnt > 4) {
         let firstIdx = numTxs.shift()
-        let tps10s = (lastIdx-firstIdx) / 10.0
+        let tps5s = (lastIdx-firstIdx) / 5.0
         let tps1s = lastIdx-before
 
-        // 20초마다 출력
-        if (debug || (remainWorkTime < 6 || (remainWorkTime % 20 == 0))) {
-            // INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(10s): ${tps10s.toFixed(1)}, tps(1s): ${tps1s}`)
-            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps.toFixed(1)}, tps(10s): ${tps10s}, tps(1s): ${tps1s}`)
+        if (debug || (remainWorkTime < 6 || (remainWorkTime % displayLogInterval == 0))) {
+            // INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps(5s): ${tps5s.toFixed(1)}, tps(1s): ${tps1s}`)
+            INFO(`* ${chkCnt} seconds... active:${runningItems} requested tx: ${lastIdx}, responsed tx: ${lastIdx2}, tps:${allTps.toFixed(1)}, tps(5s): ${tps5s}, tps(1s): ${tps1s}`)
         }
         
         // response 기준에서 request 기준으로 변경되어 주석처리함
         // if (runningItems < tpsAllowOffset) {  ...
         if (allTps > maxTps && tps1s > savedTps) {
             tickInterval++
-            console.log('up interval:', tickInterval, "(", tps1s, tps10s, allTps.toFixed(1), ")")
+            if (debug) {
+                INFO(`[${chkCnt}s] tps down -> interval(+): ${tickInterval} (tps: ${allTps.toFixed(1)}, ${tps5s}, ${tps1s})`)
+            }
         }
         else if (allTps < minTps && tps1s < savedTps) {
             tickInterval--
-            console.log('down interval:', tickInterval, "(", tps1s, tps10s, allTps.toFixed(1), ")")
+            if (debug) {
+                INFO(`[${chkCnt}s] tps up -> interval(-): ${tickInterval} (tps: ${allTps.toFixed(1)}, ${tps5s}, ${tps1s})`)
+            }
         }
     }
     before = lastIdx
@@ -112,14 +125,16 @@ function updateStatus() {
     }
 }
 
-let savedTps = 0
 function loadInterval() {
     fs.readFile(confPath, 'utf-8', (err, data) => {
         if (err) { console.log('read', confPath, err); }
         else if (savedTps != data) {
             let nVal = Number(data)
-            if (!isNaN(nVal)) {
-                savedTps = nVal
+            if (isNaN(nVal)) {
+                INFO(`[SKIP] wrong data: ${_nVal}`)
+            }
+            else {
+                savedTps = data
                 updateInterval(nVal)
             }
         }
@@ -128,11 +143,11 @@ function loadInterval() {
 
 function updateInterval(_nVal) {
 
-    let iVal = Math.round(_nVal)
     maxTps = _nVal + tpsAllowOffset
     minTps = _nVal - tpsAllowOffset
+    INFO(' * set target tps:', _nVal, "(", minTps, "~", maxTps, ")")
 
-    console.log(' * set tps:', _nVal, "(", minTps, "~", maxTps, ")")
+    let iVal = Math.round(_nVal)
     if (iVal > 0) {
         if (iVal >= 400) {
             // too high
@@ -166,7 +181,6 @@ const request = {
     headers: {'Content-Type': 'application/json'},
     resolveWithFullResponse: true,
     timeout: 5000,
-    //agent: false,
     body: {}
 }
 
@@ -225,7 +239,7 @@ async function eachTest()
             
             if (!readyEnd) {  
                 readyEnd = true 
-                INFO(`sended tx: ${sendCount}, tps(avg): ${(sendCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
+                INFO(`sended tx: ${sendCount}, processed tx: ${successCount}, tps(avg): ${(successCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
             }
             return
         }

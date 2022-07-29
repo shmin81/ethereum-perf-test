@@ -245,13 +245,13 @@ async function eachTest()
                 eachTest()
             }, tickInterval)
             
-            if (!readyEnd) {  
+            if (!readyEnd && runningItems > 1) {  
                 readyEnd = true 
-                INFO(`sended tx: ${sendCount}, processed tx: ${successCount}, tps(avg): ${(successCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
+                INFO(`sended tx: ${sendCount}, processed tx: ${successCount}, time(s): ${offsetTime}, tps(avg): ${(successCount/offsetTime).toFixed(3)}`)
             }
             return
         }
-        INFO(`processed tx: ${successCount}, tps(avg): ${(successCount/offsetTime).toFixed(3)}, time: ${offsetTime} seconds`)
+        INFO(`processed tx: ${successCount}, time(s): ${offsetTime}, tps(avg): ${(successCount/offsetTime).toFixed(3)}, target tps: ${savedTps}`)
     }
 }
 

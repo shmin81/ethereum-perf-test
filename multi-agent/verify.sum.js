@@ -26,6 +26,7 @@ let dTx = 0
 let workingTime = 0
 let tps = 0
 let blkTps = 0
+let dateTime = null
 
 function main () {
     if (fs.existsSync(refPath)) {
@@ -128,6 +129,11 @@ function main () {
                     }
                 }
             }
+            else if (dateTime == null && lineStr.startsWith('*** 20')) {
+                dateTime = lineStr.replace('***', " ")
+                dateTime = dateTime.replace('***', " ")
+                dateTime = dateTime.trim()
+            }
         }
     }
     else {
@@ -139,7 +145,10 @@ function main () {
     if (fs.existsSync(resultPath) == false) {
         fs.writeFileSync(resultPath, `${headerStr}\n`)
     }
-    let dataStr = `${dt.toISOString()},${projectName},${tps},${txCnt},${workingTime},${minTxLatency},${maxTxLatency},${sTx},${rTx},${dTx},${maxBlockNumber-minBlockNumber+1},${blkTps}`
+    if (dateTime == null) {
+        dateTime = dt.toISOString()
+    }
+    let dataStr = `${dateTime},${projectName},${tps},${txCnt},${workingTime},${minTxLatency},${maxTxLatency},${sTx},${rTx},${dTx},${maxBlockNumber-minBlockNumber+1},${blkTps}`
     console.log(headerStr)
     console.log(dataStr)
     fs.appendFileSync(resultPath, `${dataStr}\n`)

@@ -33,6 +33,9 @@ const conf = utils.loadConf(confPath)
 let httpRpcUrl = ''
 let web3 = null
 
+let maxBlockNumber = -1
+let minBlockNumber = -1
+
 async function init() {
 	LOG(JSON.stringify(conf))
 	
@@ -51,12 +54,17 @@ async function init() {
                 //let strinfos = lineStr.split(' ')
                 let idx = lineStr.indexOf('max:')
                 let maxBlockNumGet = Number(lineStr.substring(idx+4))
-                if (!Number.isNaN(maxBlockNumGet) && maxBlockNumGet > blockNumber) {
-                    blockNumber = maxBlockNumGet
+                if (!Number.isNaN(maxBlockNumGet) && maxBlockNumGet > maxBlockNumber) {
+                    maxBlockNumber = maxBlockNumGet
+                }
+                let idx2 = lineStr.indexOf('min:')
+                let minBlockNumGet = Number(lineStr.substring(idx2+4, idx-1))
+                if (!Number.isNaN(minBlockNumGet) && (minBlockNumber < 0 || minBlockNumGet < minBlockNumber)) {
+                    minBlockNumber = minBlockNumGet
                 }
             }
         }
-        blockNumber += MaxScanRangeNotFoundTx
+        blockNumber = maxBlockNumber + MaxScanRangeNotFoundTx
     }
 
 	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
@@ -152,8 +160,8 @@ async function run() {
             }
             resultStr += ` * ${privSender} ${txCnt}\n`
         }
-
-        let tpsResultStr = ` * block tps (max): ${maxTps}`
+        let tpsResultStr = ` * block tps (max): ${maxTps}\n`
+        tpsResultStr += ` * blocks: ${maxBlockNumber - minBlockNumber + 1} (${minBlockNumber} ~ ${maxBlockNumber})`
         LOG(tpsResultStr)
 
         LOG(`saving...(overwriting) ${resultPath}`)

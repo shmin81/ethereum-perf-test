@@ -49,7 +49,7 @@ function firstProcess(id, inputConf) {
   })
 }
 
-async function nextProcess(id) {
+async function secondProcess(id) {
 
   INFO(`*${id}* new process => node verify.tx.latency2.js`);
 
@@ -70,13 +70,34 @@ async function nextProcess(id) {
   })
 }
 
-async function finalProcess(id) {
+async function thirdProcess(id) {
 
   INFO(`*${id}* new process => node verify.block.js`);
 
   return new Promise(function(resolve, reject) {
 
     let process3 = spawn("node", [ 'verify.block.js', confPath ]);
+    
+    process3.stderr.on('data', function(data) {
+        ERROR(data)
+        reject(false)
+    });
+    process3.stdout.on('data', function(data) {
+        INFOSUB(data)
+    });
+    process3.on('exit', function(code) {
+        resolve(code)
+    })
+  })
+}
+
+async function finalProcess(id) {
+
+  INFO(`*${id}* new process => node verify.sum.js`);
+
+  return new Promise(function(resolve, reject) {
+
+    let process3 = spawn("node", [ 'verify.sum.js', projectName ]);
     
     process3.stderr.on('data', function(data) {
         ERROR(data)
@@ -113,7 +134,14 @@ async function mainTest() {
       }
     }
 
-    resultCode = await nextProcess(++cntt)
+    resultCode = await secondProcess(++cntt)
+    INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
+    if (resultCode > 0) {
+      // 종료한다.
+      process.exit(1)
+    }
+
+    resultCode = await thirdProcess(++cntt)
     INFO(`*${cntt}* script done - resultCode: ${resultCode}`)
     if (resultCode > 0) {
       // 종료한다.

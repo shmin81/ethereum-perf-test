@@ -303,6 +303,9 @@ function update(_startTime, _settleTime, _transactionHash) {
     if (timeOffset < minOffset) {
         minOffset = timeOffset
     }
+    if (minSendTime > _startTime) {
+        minSendTime = _startTime
+    }
 
     // sendTime, blockTime, 반영시간, txid ?
     fs.appendFileSync(resultPath, `${_startTime} ${_settleTime} ${timeOffset} ${_transactionHash}\n`)

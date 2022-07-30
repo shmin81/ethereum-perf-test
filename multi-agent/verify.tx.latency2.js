@@ -155,7 +155,7 @@ async function run() {
         let refStr = ' ============================================\n'
         refStr += ` * tx count: ${count}, time offset(ms): ${maxSettleTime-minSendTime}\n`
         refStr += ` * start time: ${minSendTime}, last block time: ${maxSettleTime}\n`
-        refStr += ` * latency avg: ${(settleSum / count).toFixed(2)}, min: ${minTxLatency}, max: ${maxTxLatency}\n`
+        refStr += ` * latency avg: ${(settleSum / count).toFixed(1)}, min: ${minTxLatency}, max: ${maxTxLatency}\n`
         refStr += ` * tps: ${(count * 1000 / (maxSettleTime-minSendTime)).toFixed(3)}`
         LOG(refStr)
         LOG(`saving... (updating) ${refPath}`)

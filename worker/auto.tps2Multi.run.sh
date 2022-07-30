@@ -4,10 +4,11 @@
 
 testDurationSec=600    # test time (send tx)
 waitUserTimeSec=240    # waiting for interval
-waitIncreaseSec=30     # waiting for interval
+waitIncreaseSec=20     # waiting for interval
 
-testTpsArr=( 1000 1050 1100 1150 1200 1250 1300 1350 )
+#testTpsArr=( 1000 1050 1100 1150 1200 1250 1300 1350 )
 #testTpsArr=( 1000 1050 1100 1120 1140 1160 1180 1200 1220 1240 1260 1280 1300 1350 )
+testTpsArr=( 1000 1050 1080 1100 1120 1140 1160 1180 1200 1220 1240 1260 1280 1300 1320 1350 )
 
 # testCaseName = $testNamePrefix'_'$testTps'_'$testDurationSec
 testNamePrefix='testA_0'
@@ -55,7 +56,7 @@ function checkTxPool {
 function waitIntervalWork {
 
     # sleep time
-    waitUserTimeSec=$(($waitUserTimeSec - $waitIncreaseSec))
+    waitUserTimeSec=$(($waitUserTimeSec - $waitIncreaseSec - $waitIncreaseSec))
     echo 'ready for settle ... '$waitUserTimeSec 's ('$1')'
     waitSleep $waitUserTimeSec
 
@@ -65,7 +66,7 @@ function waitIntervalWork {
     echo ''
 
     # sleep time
-    waitUserTimeSec=$(($waitUserTimeSec + $waitIncreaseSec + $waitIncreaseSec))
+    waitUserTimeSec=$(($waitUserTimeSec + $waitIncreaseSec + $waitIncreaseSec + $waitIncreaseSec))
     echo 'ready for reporting ... '$waitUserTimeSec 's'
     waitSleep $waitUserTimeSec
 

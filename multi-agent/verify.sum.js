@@ -17,6 +17,7 @@ let maxBlockNumber = -1
 let minBlockNumber = -1
 // let maxTxTime = -1
 // let minTxTime = 100000
+let txlatencyAvg = 0
 let maxTxLatency = -1
 let minTxLatency = 100000
 let txCnt = 0
@@ -111,6 +112,17 @@ function main () {
                     }
                 }
             }
+            else if (lineStr.startsWith(' * latency: ')) {
+                // verify?
+                let idx2 = lineStr.indexOf(':')
+                if (idx2 < 20) {
+                    let idx3 = lineStr.indexOf(',')
+                    let txlatencyAvgGet = Number(lineStr.substring(idx2+1, idx3))
+                    if (!Number.isNaN(txlatencyAvgGet)) {
+                        txlatencyAvg = txlatencyAvgGet
+                    }
+                }
+            }
             else if (lineStr.startsWith(' * tps: ')) {
                 let idx = lineStr.lastIndexOf(':')
                 if (idx > 5) {
@@ -141,14 +153,14 @@ function main () {
         process.exit(1)
     }
 
-    let headerStr = 'report time,test name,tps(avg),tx count,tx time,latency(min),latency(max),success,reverted,dropped,block count,max tps(block)'
+    let headerStr = 'report time,test name,tps(avg),tx count,tx time,latency(avg),latency(min),latency(max),success,reverted,dropped,block count,max tps(block)'
     if (fs.existsSync(resultPath) == false) {
         fs.writeFileSync(resultPath, `${headerStr}\n`)
     }
     if (dateTime == null) {
         dateTime = dt.toISOString()
     }
-    let dataStr = `${dateTime},${projectName},${tps},${txCnt},${workingTime},${minTxLatency},${maxTxLatency},${sTx},${rTx},${dTx},${maxBlockNumber-minBlockNumber+1},${blkTps}`
+    let dataStr = `${dateTime},${projectName},${tps},${txCnt},${workingTime},${txlatencyAvg},${minTxLatency},${maxTxLatency},${sTx},${rTx},${dTx},${maxBlockNumber-minBlockNumber+1},${blkTps}`
     console.log(headerStr)
     console.log(dataStr)
     fs.appendFileSync(resultPath, `${dataStr}\n`)

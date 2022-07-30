@@ -1,7 +1,5 @@
 
 const fs = require("fs")
-const utils = require('../common/utils')
-const Web3 = require('web3')
 
 const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
 
@@ -30,10 +28,13 @@ function init() {
 async function run() {
     LOG('  =======  run  =======')
 
+    let minTxLatency = 10000
+    let maxTxLatency = 0
     let minSendTime = 0
     let maxSettleTime = 0
     let count = 0
     let pre_progress = -1
+    let settleSum = 0
     try {
         let allLines = lines.length - 1
         for (let i=1; i<allLines; i++) {
@@ -46,19 +47,30 @@ async function run() {
                 continue
             }
             count++
+            let sendTimeMs = Number(txInfos[0])
+            let settleTimeMs = Number(txInfos[1])
             if (simpleTimeOffset == 0) {
-                simpleTimeOffset = Number(txInfos[0]) - 100
-                minSendTime = Number(txInfos[0])
-                maxSettleTime = Number(txInfos[1])
+                simpleTimeOffset = sendTimeMs - 100
+                minSendTime = sendTimeMs
+                maxSettleTime = settleTimeMs
             }
             else {
-                if (minSendTime > Number(txInfos[0])) {
-                    minSendTime = Number(txInfos[0])
+                if (minSendTime > sendTimeMs) {
+                    minSendTime = sendTimeMs
                 }
-                if (maxSettleTime < Number(txInfos[1])) {
-                    maxSettleTime = Number(txInfos[1])
+                if (maxSettleTime < settleTimeMs) {
+                    maxSettleTime = settleTimeMs
                 }
             }
+            let txLatency = settleTimeMs - sendTimeMs
+            if (minTxLatency > txLatency) {
+                minTxLatency = txLatency
+            }
+            if (maxTxLatency < txLatency) {
+                maxTxLatency = txLatency
+            }
+            settleSum += txLatency
+            //settleSum += parseInt(Math.round(txLatency / 10).toString())
 
             let progress = parseInt(i * 100 / allLines)
             // LOG(` * [${progress}%] transactionHash: ${transactionHash}`)
@@ -143,6 +155,7 @@ async function run() {
         let refStr = ' ============================================\n'
         refStr += ` * tx count: ${count}, time offset(ms): ${maxSettleTime-minSendTime}\n`
         refStr += ` * start time: ${minSendTime}, last block time: ${maxSettleTime}\n`
+        refStr += ` * latency avg: ${(settleSum / count).toFixed(2)}, min: ${minTxLatency}, max: ${maxTxLatency}\n`
         refStr += ` * tps: ${(count * 1000 / (maxSettleTime-minSendTime)).toFixed(3)}`
         LOG(refStr)
         LOG(`saving... (updating) ${refPath}`)

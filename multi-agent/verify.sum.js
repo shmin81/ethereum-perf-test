@@ -112,7 +112,7 @@ function main () {
                     }
                 }
             }
-            else if (lineStr.startsWith(' * latency: ')) {
+            else if (lineStr.startsWith(' * latency ')) {
                 // verify?
                 let idx2 = lineStr.indexOf(':')
                 if (idx2 < 20) {

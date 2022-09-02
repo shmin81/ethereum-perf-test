@@ -96,6 +96,22 @@ exports.deployNewDocuContract = function (contractAddress, transactionHash=null)
     // log ??
 }
 
+exports.deployNewDocMgmtContract = function (contractAddress, transactionHash=null) {
+    const confObj = JSON.parse(confContent)
+    confObj.docMgmtAddress = contractAddress
+    let outStr = JSON.stringify(confObj, null, 2)
+    fs.writeFileSync(confPath, outStr)
+    // log ??
+}
+
+exports.deployNewChainzDocContract = function (contractAddress, transactionHash=null) {
+    const confObj = JSON.parse(confContent)
+    confObj.chainzDocAddress = contractAddress
+    let outStr = JSON.stringify(confObj, null, 2)
+    fs.writeFileSync(confPath, outStr)
+    // log ??
+}
+
 const _request = {
     method: 'POST',
     uri: null,

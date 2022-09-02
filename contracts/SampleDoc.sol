@@ -9,7 +9,7 @@ pragma solidity >=0.5.0 <=0.8.18;
 contract SampleDoc {
 
     struct Document {
-        uint256 id;
+        //uint256 id;  // mapping의 key로 사용되므로 중복임
         bytes32 fileHash;
         bytes32 fileNameHash;
         uint256 regTimestamp;
@@ -19,7 +19,7 @@ contract SampleDoc {
     }
 
     mapping(uint256 => Document) documents;
-    mapping(address => uint256) documentCounts;
+    mapping(address => uint256) documentCounts; // doc owner별 seq 계산용
     mapping(uint256 => uint256) documentUpdateCounts;
 
     event CreateDocument (
@@ -67,7 +67,7 @@ contract SampleDoc {
 
         documentCounts[msg.sender] += 1;
 
-        documents[ _id ].id = _id ;
+        //documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash ;
         documents[ _id ].fileNameHash = ~_fileHash ;
         documents[ _id ].regTimestamp = block.timestamp ;
@@ -172,7 +172,8 @@ contract SampleDoc {
         Document memory document = documents[_id];
 
         return (
-            document.id,
+            _id,
+            // document.id,
             document.fileHash,
             document.regTimestamp,
             document.expTimestamp,

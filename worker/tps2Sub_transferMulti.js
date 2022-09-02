@@ -30,7 +30,7 @@ const body = {
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
     INFO('Wrong input params - "agent_rpc" [ start_up_time(ms) working_time(s) ]');
-    INFO('  ex) node tps2Sub_single_thread.js http://localhost:10080/transferMulti');
+    INFO('  ex) node tps2Sub_transferMulti.js http://localhost:10080/transferMulti');
     process.exit(2);
 }
 

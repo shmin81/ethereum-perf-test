@@ -1,6 +1,6 @@
 
-const fs = require("fs");
-const { Address } = require('ethereumjs-util')
+//const fs = require("fs");
+//const { Address } = require('ethereumjs-util')
 const Web3Utils = require('web3-utils');
 
 const utils = require('./utils')
@@ -10,7 +10,7 @@ const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg ===
 
 //=============================
 const value = 100000
-const abiPath = "../contracts/SimpleToken.abi"
+//const abiPath = "../contracts/SimpleToken.abi"
 //=============================
 const args = process.argv.slice(2)
 if (args.length != 1) {
@@ -26,6 +26,7 @@ let accountConf = null
 let senderNonce = 0
 let request
 let response
+
 async function init() {
 	conf = utils.loadConf(confPath)
 	LOG(JSON.stringify(conf))

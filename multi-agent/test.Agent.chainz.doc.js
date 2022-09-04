@@ -21,6 +21,11 @@ const DEBUG = (msg, showLog=true) => {
     console.log(msg)
   }
 }
+//////////////////////////////////////
+// 1. starting this server, DocManager is deploy new docService contract? (or get docuCount from deployed target docService)
+//  1.1 check docService count and docuCount => if need, deploy? what is condition? 
+// 2. when deploy and change? (when added over 100,000 docu, deploy new contract. and when added 200,000 docu , change target new contract.)
+// 3. How to make new docId? index of target docService from DocManager + doc sequence of target docService (8 digit)
 
 // Environment variables
 const args = process.argv.slice(2)
@@ -86,12 +91,11 @@ server.listen(port, async () => {
     accountFrom = utils.convertPrivKeyToAccount(conf.ownerPrivKey)
 	  INFO(`deploy sender: ${accountFrom.address}`)
 
+    await setDocServiceAddress(minerIdx, endpointConf.length)
 
     INFO(`gas: (deploy docService) ${await test.deployEstimateGas(accountFrom.address)}`)
     INFO(`gas: (create document) ${await test.createEstimateGas(accountFrom.address)}`)
-
-
-    test.setDocServiceContractAddress
+    
 
     for (let i=0; i<acountCnt; i++) {
 
@@ -121,7 +125,26 @@ async function deployNewService() {
   let resp = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
   let req = test.deployReq(conf.ownerPrivKey, Web3Utils.hexToNumber(resp))
   resp = await utils.sendHttp(req)
+  // txReceipt?
+  test.setDocServiceContractAddress()
   
+}
+
+async function setDocServiceAddress(nodeIdx, nodeCnt) {
+  let numDeploy = await test.getDeployDocCount()
+  let selectIdx = numDeploy - nodeCnt + nodeIdx
+  if (selectIdx < 0) {
+    await deployNewService()
+  }
+  else {
+    let targetAddress = await test.getDeployDocAddress(selectIdx)
+    test.setDocServiceContractAddress(targetAddress)
+  }
+}
+
+let docServiceCnt=0
+async function setDocCount() {
+  docServiceCnt = await test.getDocCount()
 }
 
 //let documentId = 1
@@ -185,7 +208,8 @@ const createDocu = async (req, res) => {
     acountLock = 0;
   }
 	const nonce = accounts[accIdLock].nonceLock++
-  const docNum = accounts[accIdLock].docuCnt++
+  //const docNum = accounts[accIdLock].docuCnt++
+  const docNum = docServiceCnt++
   const acc = accounts[accIdLock]
 
   let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())

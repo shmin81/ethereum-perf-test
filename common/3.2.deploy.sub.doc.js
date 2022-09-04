@@ -53,16 +53,27 @@ async function run() {
         LOG(`eth_getTransactionCount(${accountFrom.address}) => ${senderNonce}`)
 
         request = test.deployReq(conf.ownerPrivKey, senderNonce)
-        response = await utils.sendHttp(request)
+        let txidResults = await utils.sendHttp(request)
 
-        //////  수정해야됨 .....
+        utils.sleep(2000)
 
-        if (txResults.status == true) {
-            LOG(` *** send tx - Seccess ***`)
+        request = test.ethReq('eth_getTransactionReceipt', [response])
+        let txResults = await utils.sendHttp(request)
+        LOG(`eth_getTransactionReceipt (${txidResults}) => ${JSON.stringify(txResults)}`)
 
-			LOG (` * contractAddress: ${txResults.contractAddress}`)
-			utils.deployNewChainzDocContract(txResults.contractAddress, txResults.transactionHash)
+        if (txResults.status != true) {
+            LOG(` *** send tx - Failed ***`)
+            return;
+			//LOG (` * contractAddress: ${txResults.contractAddress}`)
+			//utils.deployNewChainzDocContract(txResults.contractAddress, txResults.transactionHash)
         }
+
+        response = await test.getDeployDocCount()
+        LOG(`deployedCount().call() => ${response}`)
+        let newContractIdx = response - 1
+
+        let newContractAddress = await test.getDeployDocAddress(newContractIdx)
+        LOG(`deployedAddress(${newContractIdx}).call() => ${newContractAddress}`)
 	}
 	catch (err) {
 		LOG(err); 

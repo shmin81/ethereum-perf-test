@@ -41,7 +41,7 @@ const startIdx = Number(args[2])
 const confPath = args[3]
 const conf = utils.loadConf(confPath)
 
-let debugLog = `./test.doc.node${minerIdx}.log`
+let debugLog = `./test.chainzdoc.node${minerIdx}.log`
 let saveLog = false
 if (args.length == 5) {
   if (args[4].toLowerCase() === 'true') {
@@ -96,7 +96,6 @@ server.listen(port, async () => {
     INFO(`gas: (deploy docService) ${await test.deployEstimateGas(accountFrom.address)}`)
     INFO(`gas: (create document) ${await test.createEstimateGas(accountFrom.address)}`)
     
-
     for (let i=0; i<acountCnt; i++) {
 
       const account = accountConf[i+startIdx]
@@ -122,29 +121,29 @@ server.on('error', (error) => {
 
 async function deployNewService() {
 
-  let resp = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
-  let req = test.deployReq(conf.ownerPrivKey, Web3Utils.hexToNumber(resp))
-  resp = await utils.sendHttp(req)
-  // txReceipt?
-  test.setDocServiceContractAddress()
-  
+  ERROR('Need to deploy DocService')
+  process.exit(1)
+  // let resp = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
+  // let req = test.deployReq(conf.ownerPrivKey, Web3Utils.hexToNumber(resp))
+  // resp = await utils.sendHttp(req)
+  // // txReceipt?
+  // test.setDocServiceContractAddress()
 }
 
+let docServiceIdx=0
+let docServiceCnt=0
 async function setDocServiceAddress(nodeIdx, nodeCnt) {
   let numDeploy = await test.getDeployDocCount()
-  let selectIdx = numDeploy - nodeCnt + nodeIdx
-  if (selectIdx < 0) {
+  docServiceIdx = numDeploy - nodeCnt + nodeIdx
+  if (docServiceIdx < 0) {
     await deployNewService()
   }
   else {
-    let targetAddress = await test.getDeployDocAddress(selectIdx)
+    let targetAddress = await test.getDeployDocAddress(docServiceIdx)
     test.setDocServiceContractAddress(targetAddress)
+    docServiceCnt = await test.getDocCount()
+    INFO(`set docService(${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
   }
-}
-
-let docServiceCnt=0
-async function setDocCount() {
-  docServiceCnt = await test.getDocCount()
 }
 
 //let documentId = 1
@@ -160,7 +159,7 @@ const deployDocu = async (req, res) => {
 	const nonce = accounts[accIdLock].nonceLock++
   const acc = accounts[accIdLock]
 
-  let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
+  let documentId = Web3Utils.hexToNumberString(docServiceIdx + docNum.toString())
   let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
   DEBUG(`deploy new docService`)
   
@@ -212,9 +211,9 @@ const createDocu = async (req, res) => {
   const docNum = docServiceCnt++
   const acc = accounts[accIdLock]
 
-  let documentId = Web3Utils.hexToNumberString(acc.sender + docNum.toString())
-  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
-  DEBUG(`create docID: ${documentId} [${acc.sender} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
+  let documentId = parseInt(docServiceIdx + docNum.toString().padStart(8, '0'))
+  let fileHash = '0x' + crypto.createHash('sha256').update(documentId.toString()).digest('hex')
+  DEBUG(`create docID: ${documentId} [${docServiceIdx} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
   
   const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;

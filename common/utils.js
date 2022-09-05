@@ -104,13 +104,13 @@ exports.deployNewDocMgmtContract = function (contractAddress, transactionHash=nu
     // log ??
 }
 
-exports.deployNewChainzDocContract = function (contractAddress, transactionHash=null) {
-    const confObj = JSON.parse(confContent)
-    confObj.chainzDocAddress = contractAddress
-    let outStr = JSON.stringify(confObj, null, 2)
-    fs.writeFileSync(confPath, outStr)
-    // log ??
-}
+// exports.deployNewChainzDocContract = function (contractAddress, transactionHash=null) {
+//     const confObj = JSON.parse(confContent)
+//     confObj.chainzDocAddress = contractAddress
+//     let outStr = JSON.stringify(confObj, null, 2)
+//     fs.writeFileSync(confPath, outStr)
+//     // log ??
+// }
 
 const _request = {
     method: 'POST',
@@ -136,6 +136,61 @@ exports.getPostRequest = function (_url, _method, _params = [], _id = 1) {
 
 const httpRequest = require('request-promise')
 exports.sendHttp = function (req) {
+    return new Promise(function(resolve, reject) {
+        httpRequest.post(req)
+            .then(response => {
+                //if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                if (response.body.error == undefined && response.body.result !== undefined) {
+                    resolve(response.body.result)
+                }
+                else {
+                    reject(response.body)
+                }
+            })
+            .catch(err => {
+                console.error(err)
+            })
+    })
+}
+
+exports.httpGetTxReceipt = function (_url, _txid) {
+
+    const _body = {
+        jsonrpc:"2.0",
+        method: 'eth_getTransactionReceipt',
+        params:[ _txid ],
+        id: 4586
+    }
+
+    _request.uri = _url
+    _request.body = _body
+
+    return new Promise(function(resolve, reject) {
+        resolve(retryTest(_request))
+    })
+}
+
+const interval = 1000
+const chkMaxCount = 10
+async function retryTest(req) {
+    let response = null
+    let tryCnt = 0
+    while (response == null) {
+        let wakeUpTime = Date.now() + interval;
+        while (Date.now() < wakeUpTime) { }
+        //console.log('try ', tryCnt)
+        response = await sendhttpx(req)
+        if (response == null && tryCnt++ >= chkMaxCount){
+            response = 'failed'
+        }
+    }
+
+    return new Promise(function(resolve, reject) {
+        resolve(response)
+    })
+}
+
+async function sendhttpx(req) {
     return new Promise(function(resolve, reject) {
         httpRequest.post(req)
             .then(response => {

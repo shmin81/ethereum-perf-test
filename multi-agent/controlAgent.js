@@ -10,6 +10,7 @@ const INFO = (msg) => console.log(`${new Date().toISOString()} [INFO] ${msg}`)
 const INFOSUB = (msg) => process.stdout.write(`${new Date().toISOString()} [INFO] ${msg}`)
 const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}`)
 
+// saveLog 옵션은 로그 파일로 저장할지? 아니면 console로 출력할지를 선택함.
 const args = process.argv.slice(2)
 if (args.length == 0) {
   ERROR('need configPath [ testAgentScriptPath(./test.Agent.erc20.js) saveLog (false) ]')

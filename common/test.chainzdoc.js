@@ -18,7 +18,7 @@ let docContractAddr = null;
 let createGasHex = '0x249F0'
 let updateGasHex = '0x186A0'
 let deployGasHex = '0x549F0'
-const gasUp = 1000
+const gasUp = 20000
 
 ////////////////////////////////////////////////
 const deployDocServiceObj = {

@@ -132,6 +132,7 @@ async function deployNewService() {
 }
 
 const docCountMax=200000
+const docCountPre=195000
 let nodeCount
 let nodeIndex
 let docServiceIdx=-1
@@ -148,7 +149,7 @@ async function setDocServiceAddress(nodeIdx, nodeCnt) {
       targetAddress = await test.getDeployDocAddress(j)
       test.setDocServiceContractAddress(targetAddress)
       docServiceCnt = await test.getDocCount()
-      if (docServiceCnt < (docCountMax - 5000)) {
+      if (docServiceCnt < docCountPre) {
         docServiceIdx = j
         break;
       }
@@ -164,15 +165,25 @@ async function setDocServiceAddress(nodeIdx, nodeCnt) {
   }
 }
 
-async function nextDocServiceAddress() {
+async function prepareNextDocServiceAddress(_docServiceIdx) {
 
-  docServiceIdx++
-  let targetAddress = await test.getDeployDocAddress(docServiceIdx)
-  test.setDocServiceContractAddress(targetAddress)
-  docServiceCnt = await test.getDocCount()
+  _docServiceIdx++
+  let targetAddress = await test.getDeployDocAddress(_docServiceIdx)
+  let _docServiceCnt = await test.getDocCount(targetAddress)
+  
+  INFO(`prepare docService(${_docServiceIdx}): ${targetAddress} - ${_docServiceCnt}`)
 
-  INFO(`set docService(${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
-  docServiceCnt += nodeIndex
+  if (_docServiceCnt > docCountPre) {
+    // next contract
+    return prepareNextDocServiceAddress(_docServiceIdx)
+  }
+
+  _docServiceCnt += nodeIndex
+  return {
+    addr: targetAddress,
+    idx: _docServiceIdx,
+    cnt: _docServiceCnt 
+  }
 }
 
 //let documentId = 1
@@ -229,6 +240,8 @@ const deployDocu = async (req, res) => {
     })
 }
 
+let prepareNextContract = null
+let readyNext = false
 const createDocu = async (req, res) => {
  
   const accIdLock = acountLock++
@@ -238,13 +251,23 @@ const createDocu = async (req, res) => {
 	const nonce = accounts[accIdLock].nonceLock++
   //const docNum = accounts[accIdLock].docuCnt++
   //const docNum = docServiceCnt++
+
   const acc = accounts[accIdLock]
-  if (docCountMax > docServiceCnt) {
-    docServiceCnt += nodeCount
+  if (docServiceCnt >= docCountMax) {
+    // change target contract
+    test.setDocServiceContractAddress(prepareNextContract.addr)
+    docServiceCnt = prepareNextContract.cnt
+    docServiceIdx = prepareNextContract.idx
+    readyNext == false
   }
-  else {
-    await nextDocServiceAddress()
+
+  if (docCountPre < docServiceCnt) {
+    if (readyNext == false) {
+      readyNext = true
+      prepareNextContract = prepareNextDocServiceAddress(docServiceIdx)
+    }
   }
+  docServiceCnt += nodeCount
 
   let documentId = Web3Utils.hexToNumberString(acc.sender + nonce.toString().padStart(8, '0'))
   let fileHash = '0x' + crypto.createHash('sha256').update(documentId.toString()).digest('hex')

@@ -415,11 +415,14 @@ exports.getDoc = function (_id) {
     })
 }
 
-exports.getDocCount = function () {
+exports.getDocCount = function (_docContractAddr=null) {
 
     const txData = {
         to: docContractAddr,
         data: ABIHelper.getCallDataByABI(getDocCntObj, [])
+    }
+    if (_docContractAddr != null) {
+        txData.to = _docContractAddr
     }
     callDocuBody.params = [txData, "latest"]
     callDocuBody.id++

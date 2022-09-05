@@ -271,7 +271,7 @@ exports.getDeployDocCount = function () {
 
 /////////////////////////////////////////////////////////
 
-exports.createEstimateGas = function (senderAddr, _id=12345, _fileHash='0x11111111111111111111111111111111ffffffffffffffffffffffffffffffff') {
+exports.createEstimateGas = function (senderAddr, _id=99999999, _fileHash='0x11111111111111111111111111111111ffffffffffffffffffffffffffffffff') {
     const txData = {
         from: senderAddr,
         to: docContractAddr,

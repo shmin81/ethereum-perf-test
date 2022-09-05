@@ -131,8 +131,8 @@ async function deployNewService() {
   // test.setDocServiceContractAddress()
 }
 
-const docCountMax=200000
-const docCountPre=195000
+const docCountMax=250000
+const docCountPre=docCountMax-10000
 let nodeCount
 let nodeIndex
 let docServiceIdx=-1
@@ -179,11 +179,12 @@ async function prepareNextDocServiceAddress(_docServiceIdx) {
   }
 
   _docServiceCnt += nodeIndex
-  return {
+  prepareNextContract = {
     addr: targetAddress,
     idx: _docServiceIdx,
     cnt: _docServiceCnt 
   }
+  INFO(`prepared: ${JSON.stringify(prepareNextContract)}`)
 }
 
 //let documentId = 1
@@ -258,13 +259,13 @@ const createDocu = async (req, res) => {
     test.setDocServiceContractAddress(prepareNextContract.addr)
     docServiceCnt = prepareNextContract.cnt
     docServiceIdx = prepareNextContract.idx
-    readyNext == false
+    readyNext = false
+    INFO(`changed: ${JSON.stringify(prepareNextContract)}`)
   }
-
-  if (docCountPre < docServiceCnt) {
+  else if (docCountPre < docServiceCnt) {
     if (readyNext == false) {
       readyNext = true
-      prepareNextContract = prepareNextDocServiceAddress(docServiceIdx)
+      prepareNextDocServiceAddress(docServiceIdx)
     }
   }
   docServiceCnt += nodeCount

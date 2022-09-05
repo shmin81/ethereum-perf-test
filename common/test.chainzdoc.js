@@ -89,7 +89,7 @@ exports.setDocServiceContractAddress = function (_contractAddress) {
     docContractAddr = _contractAddress
 
     if (docContractAddr == undefined || docContractAddr == null || !docContractAddr.startsWith('0x')) {
-        throw new Error('wrong docService contract address')
+        throw new Error(`wrong docService contract address [${docContractAddr}]`)
     }
 }
 

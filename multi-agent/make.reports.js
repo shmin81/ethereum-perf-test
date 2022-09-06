@@ -31,7 +31,7 @@ if (fs.existsSync(nodeScript) == false) {
 
 function firstProcess(id, inputConf) {
 
-  INFO(`*${id}* new process => node ${nodeScript} ${confPath}`);
+  INFO(`*${id}* new process => node ${nodeScript} ${confPath}, ${inputConf}, ${id}`);
 
   return new Promise(function(resolve, reject) {
     let process1 = spawn("node", [ nodeScript, confPath, inputConf, id ]);
@@ -72,7 +72,7 @@ async function secondProcess(id) {
 
 async function thirdProcess(id) {
 
-  INFO(`*${id}* new process => node verify.block.js`);
+  INFO(`*${id}* new process => node verify.block.js ${confPath}`);
 
   return new Promise(function(resolve, reject) {
 
@@ -93,7 +93,7 @@ async function thirdProcess(id) {
 
 async function finalProcess(id) {
 
-  INFO(`*${id}* new process => node verify.sum.js`);
+  INFO(`*${id}* new process => node verify.sum.js ${projectName}`);
 
   return new Promise(function(resolve, reject) {
 

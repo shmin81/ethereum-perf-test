@@ -278,7 +278,7 @@ exports.createEstimateGas = function (senderAddr, _id=99999999, _fileHash='0x111
     const txData = {
         from: senderAddr,
         to: docContractAddr,
-        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${Math.floor(+ new Date() / 1000)}`], `${Math.ceil(+ new Date() / 100)}`])
+        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${Math.floor(+ new Date() / 1000)}`, `${Math.ceil(+ new Date() / 100)}`])
     }
     estimateGasDocuBody.params = [ txData ]
     estimateGasDocuBody.id++

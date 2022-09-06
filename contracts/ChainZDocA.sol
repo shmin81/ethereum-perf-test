@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >0.4.23 <0.9.0;
 
-contract ChainZDoc {
+contract ChainZDocA {
 
     enum Validation { Valid, Invalid, Expired, Notfound }
 
     // TO-DO: 문서의 그룹핑이 필요하지 않을까? 예를 들어 인입이 A시스템읹지? B시스템인지?
     struct Document {
-        //uint256 id;  // mapping의 key로 사용되므로 중복임
+        uint256 id;  // mapping의 key로 사용되므로 중복임
         bytes32 fileHash;
         uint128 regTimestamp;
         uint128 expTimestamp;
@@ -64,7 +64,7 @@ contract ChainZDoc {
     ) public returns(uint) {
         require( documents[ _id ].expTimestamp == 0, "DOCUMENT_ID_ALREADY_EXISTED");
 
-        // documents[ _id ].id = _id ;
+        documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash;
         documents[ _id ].regTimestamp = _regTimestamp;
         documents[ _id ].expTimestamp = _expTimestamp;
@@ -156,8 +156,8 @@ contract ChainZDoc {
 
         Document memory document = documents[_id];
         return (
-            _id,
-            // document.id,
+            //_id,
+            document.id,
             document.fileHash,
             document.regTimestamp,
             document.expTimestamp

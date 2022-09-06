@@ -9,22 +9,12 @@ const test = require('./test.chainzdoc')
 const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg === "object" ? JSON.stringify(msg) : msg}`)
 
 const args = process.argv.slice(2)
-if (args.length == 0) {
-  console.log('node  3.2.deploy.sub.doc.js  configPath [ deployCnt(1) ]')
+if (args.length != 1) {
+  console.log('node  3.3.deploy.sub.docInfos.js  configPath')
   process.exit(0)
 }
 
 let confPath = args[0]
-let deployCount = 1
-if (args[1] != undefined) {
-    let cnt = Number(args[1])
-    if (!Number.isNaN(cnt) && cnt > 1 && cnt < 101){
-        deployCount = parseInt(args[1])
-    }
-    else {
-        console.log(`[skip] args[1] => '${args[1]}'`)
-    }
-}
 
 let conf = null
 let accountFrom = null
@@ -57,33 +47,6 @@ async function run() {
 	let results = null
 	try {
         LOG(`deploy docService count: ${await test.getDeployDocCount()}`)
-
-        LOG(`gas: (deploy docService) ${await test.deployEstimateGas(accountFrom.address)}`)
-
-        request = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
-        response = await utils.sendHttp(request)
-        senderNonce = Web3Utils.hexToNumber(response)
-        LOG(`eth_getTransactionCount(${accountFrom.address}) => ${senderNonce}`)
-
-        for (let i=0; i<deployCount; i++) {
-            request = test.deployReq(accountFrom.privKeyBuf, senderNonce++)
-            //console.log(request)
-            let txidResults = await utils.sendHttp(request)
-            //console.log('txid:', txidResults)
-            //utils.sleep(1000)
-            let txResults = await utils.httpGetTxReceipt(httpRpcUrl, txidResults)
-
-            // request = test.ethReq('eth_getTransactionReceipt', [txidResults])
-            // let txResults = await utils.sendHttp(request)
-            LOG(`${i} eth_getTransactionReceipt (${txidResults}) => ${JSON.stringify(txResults)}`)
-
-            if (txResults.status != true) {
-                LOG(` *** send tx - Failed ***`)
-                return;
-                //LOG (` * contractAddress: ${txResults.contractAddress}`)
-                //utils.deployNewChainzDocContract(txResults.contractAddress, txResults.transactionHash)
-            }
-        }
 
         response = await test.getDeployDocCount()
         LOG(`deployedCount().call() => ${response}`)

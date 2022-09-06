@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >0.4.23 <0.9.0;
 import "./ChainZDoc.sol";
+import "./ChainZDocA.sol";
+import "./ChainZDocB.sol";
 
-// solc DocManager.sol  --bin --abi --optimize --overwrite -o .
+// solc DocManagerMulti.sol  --bin --abi --optimize --overwrite -o .
 
-contract DocManager {
+contract DocManagerMulti {
 
     event LogChainZDocCreated(
         address indexed createdAddress,
@@ -18,9 +20,16 @@ contract DocManager {
         address indexed owner,
         address instigator);
 
-    uint contractDeployCount;
+    struct DocService {
+        address contractAddress;
+        uint256 contractType;
+        uint256 deployTimestamp;
+    }
+
+    uint256 contractDeployCount;
     mapping(address => bool) owners;
     mapping(uint => address) deployedContracts;     // contract 배포 순서?? (단순히 contract의 배포 순서가 몇번쨰인지??)
+    mapping(uint => DocService) deployedContractInfos;
     //mapping(address => uint) contractDeployedTime;  // contract 배포 시간? (배포되는 contract 관련 business logic)
     
     modifier onlyOwner() {
@@ -41,6 +50,34 @@ contract DocManager {
     function createDocIdentity() public onlyOwner() returns(address) {
         ChainZDoc identity = new ChainZDoc();
         deployedContracts[contractDeployCount] = address(identity);
+        deployedContractInfos[contractDeployCount].contractAddress = address(identity);
+        deployedContractInfos[contractDeployCount].contractType = 0;
+        deployedContractInfos[contractDeployCount].deployTimestamp = block.timestamp;
+        contractDeployCount++;
+        //contractDeployedTime[address(identity)] = block.timestamp;
+        emit LogChainZDocCreated(address(identity), msg.sender);
+        
+        return address(identity);
+    }
+
+    function createDocIdentityA() public onlyOwner() returns(address) {
+        ChainZDocA identity = new ChainZDocA();
+        deployedContracts[contractDeployCount] = address(identity);
+        deployedContractInfos[contractDeployCount].contractAddress = address(identity);
+        deployedContractInfos[contractDeployCount].contractType = 1;
+        deployedContractInfos[contractDeployCount].deployTimestamp = block.timestamp;
+        contractDeployCount++;
+        //contractDeployedTime[address(identity)] = block.timestamp;
+        emit LogChainZDocCreated(address(identity), msg.sender);
+        return address(identity);
+    }
+
+    function createDocIdentityB() public onlyOwner() returns(address) {
+        ChainZDocB identity = new ChainZDocB();
+        deployedContracts[contractDeployCount] = address(identity);
+        deployedContractInfos[contractDeployCount].contractAddress = address(identity);
+        deployedContractInfos[contractDeployCount].contractType = 2;
+        deployedContractInfos[contractDeployCount].deployTimestamp = block.timestamp;
         contractDeployCount++;
         //contractDeployedTime[address(identity)] = block.timestamp;
         emit LogChainZDocCreated(address(identity), msg.sender);
@@ -56,6 +93,18 @@ contract DocManager {
 	{
         require(idx < contractDeployCount, "out of range");
 		return deployedContracts[idx];
+	}
+
+    function deployedContractInfo(uint idx) 
+	    public view returns(address, uint256, uint256) 
+	{
+        require(idx < contractDeployCount, "out of range");
+        DocService memory ds = deployedContractInfos[idx];
+		return (
+            ds.contractAddress,
+            ds.contractType,
+            ds.deployTimestamp
+        );
 	}
 
     /// @dev Allows an olderOwner to add a new owner instantly

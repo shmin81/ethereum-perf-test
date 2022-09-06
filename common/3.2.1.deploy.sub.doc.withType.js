@@ -10,7 +10,7 @@ const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg ===
 
 const args = process.argv.slice(2)
 if (args.length == 0) {
-  console.log('node  3.2.deploy.sub.doc.js  configPath [ deployCnt(1) ]')
+  console.log('node  3.2.1.deploy.sub.doc.withType.js  configPath [ deployCnt(1), deployFunctionName(createDocIdentity) ]')
   process.exit(0)
 }
 
@@ -24,6 +24,18 @@ if (args[1] != undefined) {
     else {
         console.log(`[skip] args[1] => '${args[1]}'`)
     }
+}
+
+let deployFunctionName = 'createDocIdentity'
+if (args[2] != undefined && args[2] != null) {
+    deployFunctionName = String(args[2])
+}
+LOG(`** deploy function: ${deployFunctionName}`)
+
+let deployObj = {
+    "inputs":[],
+    "name":deployFunctionName,
+    "type":"function"
 }
 
 let conf = null
@@ -66,7 +78,7 @@ async function run() {
         LOG(`eth_getTransactionCount(${accountFrom.address}) => ${senderNonce}`)
 
         for (let i=0; i<deployCount; i++) {
-            request = test.deployReq(accountFrom.privKeyBuf, senderNonce++)
+            request = test.deployReq(accountFrom.privKeyBuf, senderNonce++, deployObj)
             //console.log(request)
             let txidResults = await utils.sendHttp(request)
             //console.log('txid:', txidResults)

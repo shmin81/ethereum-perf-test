@@ -28,6 +28,9 @@ const DEBUG = (msg, showLog=true) => {
 //  2.1 if 4 node, id 0 node only deploy. and each node change 50000 tx. (deploy is not ready, need to deploy before test)
 // 3. How to make new docId? senderAddress + nonce (8 digit)
 
+const docCountMax=300000
+const docCountPre=docCountMax-50000
+
 // Environment variables
 const args = process.argv.slice(2)
 if (args.length < 3) {
@@ -98,17 +101,13 @@ server.listen(port, async () => {
     INFO(`gas: (create document) ${await test.createEstimateGas(accountFrom.address)}`)
     
     for (let i=0; i<acountCnt; i++) {
-
       const account = accountConf[i+startIdx]
       account.senderPrivKeyBytes = Buffer.from(account.privKey, 'hex')
-
       account.nonceLock = await connection.eth.getTransactionCount(account.sender)
       account.startTxCount = account.nonceLock
-
       accounts[i] = account;
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)
     }
-    
   } catch(err) {
     ERROR(`web3 Error occurred: ${err}`)
     //process.exit(1)
@@ -120,19 +119,6 @@ server.on('error', (error) => {
   //process.exit(1)
 })
 
-async function deployNewService() {
-
-  ERROR('Need to deploy DocService')
-  process.exit(1)
-  // let resp = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
-  // let req = test.deployReq(conf.ownerPrivKey, Web3Utils.hexToNumber(resp))
-  // resp = await utils.sendHttp(req)
-  // // txReceipt?
-  // test.setDocServiceContractAddress()
-}
-
-const docCountMax=250000
-const docCountPre=docCountMax-10000
 let nodeCount
 let nodeIndex
 let docServiceIdx=-1
@@ -185,6 +171,17 @@ async function prepareNextDocServiceAddress(_docServiceIdx) {
     cnt: _docServiceCnt 
   }
   INFO(`prepared: ${JSON.stringify(prepareNextContract)}`)
+}
+
+async function deployNewService() {
+
+  ERROR('Need to deploy DocService')
+  process.exit(1)
+  // let resp = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
+  // let req = test.deployReq(conf.ownerPrivKey, Web3Utils.hexToNumber(resp))
+  // resp = await utils.sendHttp(req)
+  // // txReceipt?
+  // test.setDocServiceContractAddress()
 }
 
 //let documentId = 1
@@ -272,9 +269,10 @@ const createDocu = async (req, res) => {
 
   let documentId = Web3Utils.hexToNumberString(acc.sender + nonce.toString().padStart(8, '0'))
   let fileHash = '0x' + crypto.createHash('sha256').update(documentId.toString()).digest('hex')
-  DEBUG(`create docID: ${documentId} [${acc.sender} ${nonce}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
+  let regTimestamp = Math.floor(+ new Date() / 1000)
+  DEBUG(`create docID: ${documentId} [${acc.sender} ${nonce}] -> filehash: ${fileHash}`)
   
-  const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
+  const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, regTimestamp, ++expiredDate)
   const reqId = request.body.id;
 
   let sendTime = new Date()

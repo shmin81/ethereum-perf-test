@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >0.4.23 <0.9.0;
 
-contract ChainZDoc {
+contract ChainZDocB {
 
     enum Validation { Valid, Invalid, Expired, Notfound }
 
@@ -9,7 +9,7 @@ contract ChainZDoc {
     struct Document {
         //uint256 id;  // mapping의 key로 사용되므로 중복임
         bytes32 fileHash;
-        uint128 regTimestamp;
+        // uint128 regTimestamp;
         uint128 expTimestamp;
         // address owner;
         // bool    isActive;
@@ -66,7 +66,7 @@ contract ChainZDoc {
 
         // documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash;
-        documents[ _id ].regTimestamp = _regTimestamp;
+        //documents[ _id ].regTimestamp = _regTimestamp;
         documents[ _id ].expTimestamp = _expTimestamp;
         // documents[ _id ].owner = msg.sender;
         // documents[ _id ].isActive = true;
@@ -146,7 +146,7 @@ contract ChainZDoc {
         returns (
             uint256 id,
             bytes32 fileHash,
-            uint128 regTimestamp,
+            //uint128 regTimestamp,
             uint128 expTimestamp
             // address owner,
             // bool isActive
@@ -159,7 +159,7 @@ contract ChainZDoc {
             _id,
             // document.id,
             document.fileHash,
-            document.regTimestamp,
+            //document.regTimestamp,
             document.expTimestamp
             // document.owner,
             // document.isActive

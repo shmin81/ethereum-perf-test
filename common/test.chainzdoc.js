@@ -26,23 +26,23 @@ const deployDocServiceObj = {
     "name":"createDocIdentity",
     "type":"function"
 }
+const getDeployedDocServiceCntObj = {
+    "inputs":[],
+    "name":"deployedCount",
+    "type":"function"
+}
 const getDeployedDocServiceAddressObj = {
     "inputs":[{"name": "idx","type": "uint256"}],
     "name":"deployedAddress",
     "type":"function"
 }
-const gegetDeployedDocServiceCntObj = {
-    "inputs":[],
-    "name":"deployedCount",
-    "type":"function"
-}
+
 ////////////////////////////////////////////////
 const createObj = {
-    "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"},{"name": "_expTimestamp","type": "uint256"}],
+    "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"},{"name": "_regTimestamp","type": "uint128"},{"name": "_expTimestamp","type": "uint128"}],
     "name":"createDocument",
     "type":"function"
 }
-
 const checkObj = {
     "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"}],
     "name":"checkDocument",
@@ -164,7 +164,7 @@ exports.deployEstimateGas = function (senderAddr) {
     })
 }
 
-exports.deployReq = function (senderKey, nonce) {
+exports.deployReq = function (senderKey, nonce, _deployDocServiceObj=null) {
     //console.log('dep', senderKey, nonce, deployGasHex, mgmtContractAddr)
     const hrTime = process.hrtime()
     const reqId = hrTime[0] * 1000000000 + hrTime[1]
@@ -175,6 +175,9 @@ exports.deployReq = function (senderKey, nonce) {
         gasPrice: '0x00', // 10 Gwei
         to: mgmtContractAddr,
         data: ABIHelper.getCallDataByABI(deployDocServiceObj, [])
+    }
+    if (_deployDocServiceObj != null) {
+        txData.data = ABIHelper.getCallDataByABI(_deployDocServiceObj, [])
     }
     // sign the transaction
     const txObj = Transaction.fromTxData(txData, { common: customChain })
@@ -241,7 +244,7 @@ exports.getDeployDocCount = function () {
 
     const txData = {
         to: mgmtContractAddr,
-        data: ABIHelper.getCallDataByABI(gegetDeployedDocServiceCntObj, [])
+        data: ABIHelper.getCallDataByABI(getDeployedDocServiceCntObj, [])
     }
     callDocuBody.params = [txData, "latest"]
     callDocuBody.id++
@@ -275,7 +278,7 @@ exports.createEstimateGas = function (senderAddr, _id=99999999, _fileHash='0x111
     const txData = {
         from: senderAddr,
         to: docContractAddr,
-        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${Math.ceil(+ new Date() / 100)}`])
+        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${Math.floor(+ new Date() / 1000)}`], `${Math.ceil(+ new Date() / 100)}`])
     }
     estimateGasDocuBody.params = [ txData ]
     estimateGasDocuBody.id++
@@ -307,7 +310,7 @@ exports.createEstimateGas = function (senderAddr, _id=99999999, _fileHash='0x111
     })
 }
 
-exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
+exports.createReq = function (senderKey, nonce, _id, _fileHash, _regTimestamp, _expTimestamp) {
 
     const hrTime = process.hrtime()
     const reqId = hrTime[0] * 1000000000 + hrTime[1]
@@ -317,7 +320,7 @@ exports.createReq = function (senderKey, nonce, _id, _fileHash, _expTimestamp) {
         gasLimit: createGasHex,
         gasPrice: '0x00', // 10 Gwei
         to: docContractAddr,
-        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${_expTimestamp}`])
+        data: ABIHelper.getCallDataByABI(createObj, [`${_id}`, `${_fileHash}`, `${_regTimestamp}`, `${_expTimestamp}`])
     }
     
     // sign the transaction

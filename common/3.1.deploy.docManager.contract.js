@@ -11,7 +11,7 @@ const bytecode = fs.readFileSync(
 );
 
 const args = process.argv.slice(2)
-if (args.length != 1) {
+if (args.length == 0) {
   console.log('node  3.1.deploy.docManager.contract.js  configPath')
   process.exit(0)
 }

@@ -272,6 +272,44 @@ exports.getDeployDocCount = function () {
     })
 }
 
+/**
+ * sample 
+ * @param {*} _callDataFunctionObj // { "inputs":[{"name": "idx","type": "uint256"}], "name":"deployedContractInfo", "type":"function" }
+ * @param {*} _callDataFunctionParamValues 
+ * @returns 
+ */
+ exports.getFromDocManager = function (_callDataFunctionObj, _callDataFunctionParamValues=[]) {
+
+    const txData = {
+        to: mgmtContractAddr,
+        data: ABIHelper.getCallDataByABI(_callDataFunctionObj, _callDataFunctionParamValues)
+    }
+    callDocuBody.params = [txData, "latest"]
+    callDocuBody.id++
+    //console.log(txData)
+    request.body = callDocuBody
+
+    return new Promise(function(resolve, reject) {
+      httpRequest.post(request)
+        .then(response => {
+            if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
+                resolve(response.body.result)
+            }
+            else {
+                console.error(response.body)
+                // 초기 상태 검증 => contract 불일치(?)
+                process.exit(2)
+            }
+        })
+        .catch(err => {
+            console.error(err)
+            // 초기 상태 검증 => contract 불일치(?)
+            process.exit(2)
+        })
+    })
+}
+
 /////////////////////////////////////////////////////////
 
 exports.createEstimateGas = function (senderAddr, _id=99999999, _fileHash='0x11111111111111111111111111111111ffffffffffffffffffffffffffffffff') {

@@ -24,7 +24,7 @@ contract DocManager {
     //mapping(address => uint) contractDeployedTime;  // contract 배포 시간? (배포되는 contract 관련 business logic)
     
     modifier onlyOwner() {
-        require(owners[msg.sender] == true, "No permission");
+        require(owners[msg.sender] == true, "NO_PERMISSION");
         _;
     }
 
@@ -54,13 +54,13 @@ contract DocManager {
     function deployedAddress(uint idx) 
 	    public view returns(address) 
 	{
-        require(idx < contractDeployCount, "out of range");
+        require(idx < contractDeployCount, "OUT_OF_INDEX_RANGE");
 		return deployedContracts[idx];
 	}
 
     /// @dev Allows an olderOwner to add a new owner instantly
     function addOwner(address newOwner) public onlyOwner() validAddress(newOwner) {
-        require(owners[newOwner] == false, "Already registered");
+        require(owners[newOwner] == false, "ALREADY_EXISTED");
         owners[newOwner] = true;
         emit LogOwnerAdded(newOwner, msg.sender);
     }
@@ -68,8 +68,8 @@ contract DocManager {
     /// @dev Allows an owner to remove another owner instantly
     function removeOwner(address owner) public onlyOwner() {
         // an owner should not be allowed to remove itself
-        require(msg.sender != owner, "cannot remove self");
-        require(owners[owner] == true, "Already un-registered");
+        require(msg.sender != owner, "NO_PERMISSION");
+        require(owners[owner] == true, "NOT_EXISTED");
         owners[owner] = false;
         emit LogOwnerRemoved(owner, msg.sender);
     }

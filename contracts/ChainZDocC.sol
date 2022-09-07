@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >0.4.23 <0.9.0;
 
-contract ChainZDoc {
+contract ChainZDocC {
 
     enum Validation { Valid, Invalid, Expired, Notfound }
 
     // TO-DO: 문서의 그룹핑이 필요하지 않을까? 예를 들어 인입이 A시스템읹지? B시스템인지?
     struct Document {
-        //uint256 id;  // mapping의 key로 사용되므로 중복임
+        uint256 id;  // mapping의 key로 사용되므로 중복임
         bytes32 fileHash;
-        //uint128 regTimestamp;
-        uint256 expTimestamp;
+        uint128 regTimestamp;
+        uint128 expTimestamp;
         // address owner;
         // bool    isActive;
     }
@@ -29,13 +29,16 @@ contract ChainZDoc {
     // TO-DO Event 추가 검토
     event CreateDocument (
         uint256 docuId,
-        uint256 regTimestamp,
-        address regUser
+        bytes32 fileHash,
+        uint128 regTimestamp,
+        uint128 expTimestamp,
+        address owner,
+        uint docuCnt
     );
 
     event DeleteDocument (
         uint256 docuId,
-        address worker
+        address owner
     );
 
     /**
@@ -58,20 +61,19 @@ contract ChainZDoc {
         bytes32 _fileHash,
         uint128 _regTimestamp,
         uint128 _expTimestamp
-    ) public returns(bool) {
-
+    ) public returns(uint) {
         require( documents[ _id ].expTimestamp == 0, "DOCUMENT_ID_ALREADY_EXISTED");
 
-        // documents[ _id ].id = _id ;
+        documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash;
-        // documents[ _id ].regTimestamp = _regTimestamp;
+        documents[ _id ].regTimestamp = _regTimestamp;
         documents[ _id ].expTimestamp = _expTimestamp;
         // documents[ _id ].owner = msg.sender;
         // documents[ _id ].isActive = true;
 
         docCount++;
-        emit CreateDocument(_id, _regTimestamp, msg.sender);
-        return true;
+        emit CreateDocument(_id, _fileHash, _regTimestamp, _expTimestamp, msg.sender, docCount);
+        return docCount;
     }
 
     /**
@@ -88,9 +90,7 @@ contract ChainZDoc {
 
         // documents[ _id ].expTimestamp = 0;
         delete documents[ _id ];
-
         emit DeleteDocument( _id, msg.sender) ;
-
         return true;
     }
 
@@ -146,24 +146,31 @@ contract ChainZDoc {
         returns (
             uint256 id,
             bytes32 fileHash,
-            uint256 expTimestamp
-        ) {
-
+            uint128 regTimestamp,
+            uint128 expTimestamp
+            // address owner,
+            // bool isActive
+        )
+    {
         require( documents[ _id ].expTimestamp != 0, "DOCUMENT_ID_NOT_EXISTS");
 
         Document memory document = documents[_id];
         return (
-            _id,
+            //_id,
+            document.id,
             document.fileHash,
+            document.regTimestamp,
             document.expTimestamp
+            // document.owner,
+            // document.isActive
         );
     }
 
     function getDocumentCount() 
         public
         view
-        returns (uint) {
-
+        returns (uint)
+    {
         return docCount;
     }
 }

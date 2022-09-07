@@ -18,7 +18,6 @@ let confPath = args[0]
 
 let conf = null
 let accountFrom = null
-let senderNonce = 0
 let request
 let response
 let httpRpcUrl
@@ -51,13 +50,15 @@ async function run() {
         response = await test.getDeployDocCount()
         LOG(`deployedCount().call() => ${response}`)
         let newContractIdx = response - 1
+        let getObj = { "inputs":[{"name": "idx","type": "uint256"}], "name":"deployedContractInfo", "type":"function" }
 
         if (newContractIdx > 0) {
             for (let i=0; i<response; i++) {
                 let docContractAddress = await test.getDeployDocAddress(i)
+                let docContractAddressX = await test.getFromDocManager(getObj, [ i ])
                 test.setDocServiceContractAddress(docContractAddress)
                 let docCount = await test.getDocCount()
-                LOG(`deployedAddress(${i}).call() => ${docContractAddress} (docuCount: ${docCount})`)
+                LOG(`deployedAddress(${i}).call() => ${docContractAddress} (docuCount: ${docCount}) ${JSON.stringify(docContractAddressX)}`)
             }
         }
 	}

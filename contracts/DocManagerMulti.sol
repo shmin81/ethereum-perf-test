@@ -3,6 +3,7 @@ pragma solidity >0.4.23 <0.9.0;
 import "./ChainZDoc.sol";
 import "./ChainZDocA.sol";
 import "./ChainZDocB.sol";
+import "./ChainZDocC.sol";
 
 // solc DocManagerMulti.sol  --bin --abi --optimize --overwrite -o .
 
@@ -27,13 +28,14 @@ contract DocManagerMulti {
     }
 
     uint256 contractDeployCount;
+    
     mapping(address => bool) owners;
     mapping(uint => address) deployedContracts;     // contract 배포 순서?? (단순히 contract의 배포 순서가 몇번쨰인지??)
     mapping(uint => DocService) deployedContractInfos;
     //mapping(address => uint) contractDeployedTime;  // contract 배포 시간? (배포되는 contract 관련 business logic)
     
     modifier onlyOwner() {
-        require(owners[msg.sender] == true, "No permission");
+        require(owners[msg.sender] == true, "NO_PERMISSION");
         _;
     }
 
@@ -51,12 +53,11 @@ contract DocManagerMulti {
         ChainZDoc identity = new ChainZDoc();
         deployedContracts[contractDeployCount] = address(identity);
         deployedContractInfos[contractDeployCount].contractAddress = address(identity);
-        deployedContractInfos[contractDeployCount].contractType = 0;
+        deployedContractInfos[contractDeployCount].contractType = 1;
         deployedContractInfos[contractDeployCount].deployTimestamp = block.timestamp;
         contractDeployCount++;
         //contractDeployedTime[address(identity)] = block.timestamp;
         emit LogChainZDocCreated(address(identity), msg.sender);
-        
         return address(identity);
     }
 
@@ -84,6 +85,19 @@ contract DocManagerMulti {
         return address(identity);
     }
 
+    function createDocIdentityC() public onlyOwner() returns(address) {
+        ChainZDocC identity = new ChainZDocC();
+        deployedContracts[contractDeployCount] = address(identity);
+        deployedContractInfos[contractDeployCount].contractAddress = address(identity);
+        deployedContractInfos[contractDeployCount].contractType = 3;
+        deployedContractInfos[contractDeployCount].deployTimestamp = block.timestamp;
+        contractDeployCount++;
+        //contractDeployedTime[address(identity)] = block.timestamp;
+        emit LogChainZDocCreated(address(identity), msg.sender);
+        
+        return address(identity);
+    }
+
     function deployedCount() public view returns(uint) {
         return contractDeployCount;
     }
@@ -91,14 +105,14 @@ contract DocManagerMulti {
     function deployedAddress(uint idx) 
 	    public view returns(address) 
 	{
-        require(idx < contractDeployCount, "out of range");
+        require(idx < contractDeployCount, "OUT_OF_INDEX_RANGE");
 		return deployedContracts[idx];
 	}
 
     function deployedContractInfo(uint idx) 
 	    public view returns(address, uint256, uint256) 
 	{
-        require(idx < contractDeployCount, "out of range");
+        require(idx < contractDeployCount, "OUT_OF_INDEX_RANGE");
         DocService memory ds = deployedContractInfos[idx];
 		return (
             ds.contractAddress,
@@ -109,7 +123,7 @@ contract DocManagerMulti {
 
     /// @dev Allows an olderOwner to add a new owner instantly
     function addOwner(address newOwner) public onlyOwner() validAddress(newOwner) {
-        require(owners[newOwner] == false, "Already registered");
+        require(owners[newOwner] == false, "ALREADY_EXISTED");
         owners[newOwner] = true;
         emit LogOwnerAdded(newOwner, msg.sender);
     }
@@ -117,8 +131,8 @@ contract DocManagerMulti {
     /// @dev Allows an owner to remove another owner instantly
     function removeOwner(address owner) public onlyOwner() {
         // an owner should not be allowed to remove itself
-        require(msg.sender != owner, "cannot remove self");
-        require(owners[owner] == true, "Already un-registered");
+        require(msg.sender != owner, "NO_PERMISSION");
+        require(owners[owner] == true, "NOT_EXISTED");
         owners[owner] = false;
         emit LogOwnerRemoved(owner, msg.sender);
     }

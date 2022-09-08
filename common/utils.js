@@ -171,8 +171,8 @@ exports.httpGetTxReceipt = function (_url, _txid) {
     })
 }
 
-const interval = 500
-const chkMaxCount = 30
+const interval = 1000
+const chkMaxCount = 120
 let tryCnt = 0
 async function retryTest(req) {
     let response = null

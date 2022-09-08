@@ -28,13 +28,11 @@ const DEBUG = (msg, showLog=true) => {
 //  2.1 if 4 node, id 0 node only deploy. and each node change 50000 tx. (deploy is not ready, need to deploy before test)
 // 3. How to make new docId? senderAddress + nonce (8 digit)
 //  3.1 matching: 4 agent nodes -> 1 target contract 
-
-// const docuMaxCount=300000
-// const deployDocuCount=docuMaxCount-200000
-// const readyToChangeCount=docuMaxCount-50000
-const docuMaxCount=100
-const deployDocuCount=docuMaxCount-40
-const readyToChangeCount=docuMaxCount-5
+//////////////////////////////////////
+const docuMaxCount=300000
+const deployDocuCount=docuMaxCount-200000
+const readyToChangeCount=docuMaxCount-50000 // agent 실행시에만 사용됨. docuMaxCount와 동일하게 가도 될듯(?)
+//////////////////////////////////////
 
 // Environment variables
 const args = process.argv.slice(2)

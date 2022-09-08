@@ -50,9 +50,8 @@ async function run() {
 
         response = await test.getDeployDocCount()
         LOG(`deployedCount().call() => ${response}`)
-        let newContractIdx = response - 1
 
-        if (newContractIdx > 0) {
+        if (response > 0) {
             for (let i=0; i<response; i++) {
                 let docContractAddress = await test.getDeployDocAddress(i)
                 test.setDocServiceContractAddress(docContractAddress)

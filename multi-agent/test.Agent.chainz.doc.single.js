@@ -27,14 +27,19 @@ const DEBUG = (msg, showLog=true) => {
 // 2. when deploy and change? (when added over 100,000 docu, deploy new contract. and when added 200,000 docu , change target new contract.)
 //  2.1 if 4 node, id 0 node only deploy. and each node change 50000 tx. (deploy is not ready, need to deploy before test)
 // 3. How to make new docId? senderAddress + nonce (8 digit)
+//  3.1 matching: 4 agent nodes -> 1 target contract 
 
-const docCountMax=300000
-const docCountPre=docCountMax-50000
+// const docuMaxCount=300000
+// const deployDocuCount=docuMaxCount-200000
+// const readyToChangeCount=docuMaxCount-50000
+const docuMaxCount=100
+const deployDocuCount=docuMaxCount-40
+const readyToChangeCount=docuMaxCount-5
 
 // Environment variables
 const args = process.argv.slice(2)
 if (args.length < 3) {
-  console.log('node  test.Agent.chainz.doc.js  portNumber  minerIdx  accountStartIdx configPath [ debug(false) ]')
+  console.log('node  test.Agent.chainz.doc.single.js  portNumber  minerIdx  accountStartIdx configPath [ debug(false) ]')
   process.exit(0)
 }
 const port = Number(args[0])
@@ -52,6 +57,10 @@ if (args.length == 5) {
     saveLog = true
     fs.writeFileSync(debugLog, `${new Date().toISOString()} [INFO] ${port} ${minerIdx} ${startIdx} ${confPath}\n`)
   }
+}
+let deployEnabled = false
+if (minerIdx == 0) {
+  deployEnabled = true
 }
 
 // In-memory status
@@ -126,40 +135,58 @@ let docServiceCnt=0
 async function setDocServiceAddress(nodeIdx, nodeCnt) {
   
   let numDeploy = await test.getDeployDocCount()
-  if (numDeploy < 1) {
-    await deployNewService()
-  }
-  else {
-    let targetAddress = null
-    for (let j=0; j<numDeploy; j++) {
-      targetAddress = await test.getDeployDocAddress(j)
-      test.setDocServiceContractAddress(targetAddress)
-      docServiceCnt = await test.getDocCount()
-      if (docServiceCnt < docCountPre) {
-        docServiceIdx = j
-        break;
-      }
+  // if (numDeploy < 1) {
+  //   await deployNewService()
+  // }
+
+  let targetAddress = null
+  for (let j=0; j<numDeploy; j++) {
+    targetAddress = await test.getDeployDocAddress(j)
+    test.setDocServiceContractAddress(targetAddress)
+    docServiceCnt = await test.getDocCount()
+    if (docServiceCnt < readyToChangeCount) {
+      docServiceIdx = j
+      break;
     }
-    if (docServiceIdx == -1) {
-      ERROR('need to deploy docService')
-      process.exit(1)
-    }
-    INFO(`set docService(${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
-    docServiceCnt += nodeIdx
-    nodeCount = nodeCnt
-    nodeIndex = nodeIdx
   }
+  if (docServiceIdx == -1) {
+    ERROR('need to deploy docService')
+    process.exit(1)
+  }
+  INFO(`set docService(${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
+  docServiceCnt += nodeIdx
+  nodeCount = nodeCnt
+  nodeIndex = nodeIdx
+
 }
 
+// 필요하다면 배포도 수행하도록 변경
 async function prepareNextDocServiceAddress(_docServiceIdx) {
 
   _docServiceIdx++
+  let numDeploy = await test.getDeployDocCount()
+
+  // check: need to deploy
+  if (_docServiceIdx >= numDeploy) {
+    
+    if (deployEnabled) {
+      await deployNewService();
+    } 
+    else {
+      // deploy는 다른 노드에서 수행할 것임
+      readyNext = false
+      return
+    }
+    numDeploy = await test.getDeployDocCount()
+    if (_docServiceIdx >= numDeploy) {
+      return prepareNextDocServiceAddress(_docServiceIdx-1)
+    }
+  }
   let targetAddress = await test.getDeployDocAddress(_docServiceIdx)
   let _docServiceCnt = await test.getDocCount(targetAddress)
   
-  INFO(`prepare docService(${_docServiceIdx}): ${targetAddress} - ${_docServiceCnt}`)
-
-  if (_docServiceCnt > docCountPre) {
+  //INFO(`prepare docService(${_docServiceIdx}): ${targetAddress} - ${_docServiceCnt}`)
+  if (_docServiceCnt > readyToChangeCount) {
     // next contract
     return prepareNextDocServiceAddress(_docServiceIdx)
   }
@@ -174,69 +201,25 @@ async function prepareNextDocServiceAddress(_docServiceIdx) {
 }
 
 async function deployNewService() {
-
-  ERROR('Need to deploy DocService')
-  process.exit(1)
-  // let resp = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
-  // let req = test.deployReq(conf.ownerPrivKey, Web3Utils.hexToNumber(resp))
-  // resp = await utils.sendHttp(req)
-  // // txReceipt?
-  // test.setDocServiceContractAddress()
+  INFO('*** Need to deploy DocService')
+  // ERROR('Need to deploy DocService')
+  // process.exit(1)
+  let req = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
+  let res = await utils.sendHttp(req)
+  req = test.deployReq(accountFrom.privKeyBuf, Web3Utils.hexToNumber(res))
+  res = await utils.sendHttp(req)
+  let txReceipt = await utils.httpGetTxReceipt(httpRpcUrl, res)
+  INFO(`deployed docService ${JSON.stringify(txReceipt)}`)
+  // 테스트 진행 순서 관리용
+  return new Promise(function(resolve, reject) {
+    resolve(true)
+  })
 }
 
 //let documentId = 1
 //let fileHash = '0x724ad11f03ec789913d203e50bbf4f8ebe391c71d9aad551fbb55e42c69ff814'
 let expiredDate = Math.floor(+ new Date() / 1000) + 365 * 24 * 60 * 60 // 1년 후?
 
-const deployDocu = async (req, res) => {
- 
-  const accIdLock = acountLock++
-  if (acountLock == acountCnt) {
-    acountLock = 0;
-  }
-	const nonce = accounts[accIdLock].nonceLock++
-  const acc = accounts[accIdLock]
-
-  let documentId = Web3Utils.hexToNumberString(docServiceIdx + docNum.toString())
-  //let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
-  DEBUG(`deploy new docService`)
-  
-  const request = test.deployReq(acc.senderPrivKeyBytes, nonce)
-  const reqId = request.body.id;
-
-  let sendTime = new Date()
-  httpRequest.post(request)
-    .then(response => {
-      try {
-        if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
-          const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
-          //INFO(`Success! - ${JSON.stringify(output)}`)
-          DEBUG(`${sendTime.valueOf()} ${response.body.result}`)
-          res.status(200)
-          res.set('Content-Type', 'application/json;charset=utf8')
-          res.json(output)
-          successCount++
-        } else {
-          // console.dir(response)
-          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error }
-          ERROR(`Need check! - ${JSON.stringify(output)}`)
-          res.status(500)
-          res.set('Content-Type', 'application/json;charset=utf8')
-          res.json(output)
-        }
-      } catch (err) {
-        ERROR(`It SHOULD NOT happen! - ${err}`)
-        //process.exit(1)
-      }
-    })
-    .catch(err => {
-      const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}` }
-      ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
-      res.status(500)
-      res.set('Content-Type', 'application/json;charset=utf8')
-      res.json(output)
-    })
-}
 
 let prepareNextContract = null
 let readyNext = false
@@ -251,7 +234,7 @@ const createDocu = async (req, res) => {
   //const docNum = docServiceCnt++
 
   const acc = accounts[accIdLock]
-  if (docServiceCnt >= docCountMax) {
+  if (docServiceCnt >= docuMaxCount) {
     // change target contract
     test.setDocServiceContractAddress(prepareNextContract.addr)
     docServiceCnt = prepareNextContract.cnt
@@ -259,7 +242,7 @@ const createDocu = async (req, res) => {
     readyNext = false
     INFO(`changed: ${JSON.stringify(prepareNextContract)}`)
   }
-  else if (docCountPre < docServiceCnt) {
+  else if (deployDocuCount < docServiceCnt) {
     if (readyNext == false) {
       readyNext = true
       prepareNextDocServiceAddress(docServiceIdx)
@@ -387,7 +370,7 @@ function getParams(_reqBody) {
 }
 
 const router = express.Router()
-router.route('/prepare').post(deployDocu)   // deployDocument
+//router.route('/prepare').post(deployDocu)   // deployDocument
 router.route('/transfer').post(createDocu)  // createDocument
 //router.route('/transferMulti').post(updateDocu2)  // createDocument2
 router.route('/transferCount').get(transferCount)

@@ -147,7 +147,7 @@ exports.deployEstimateGas = function (senderAddr) {
             if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
                 //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
                 let _gas = Web3_Utils.hexToNumber(response.body.result)
-                deployGasHex = Web3_Utils.numberToHex(_gas + gasUp)
+                deployGasHex = Web3_Utils.numberToHex(_gas + gasUp * 5)
                 resolve(_gas)
             }
             else {

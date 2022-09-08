@@ -41,6 +41,8 @@ async function init() {
     test.customChain(chainId)
 }
 
+const getObj = { "inputs":[{"name": "idx","type": "uint256"}], "name":"deployedContractInfo", "type":"function" }
+
 async function run() {
 	LOG('  =======  run  =======')
 	let results = null
@@ -49,16 +51,18 @@ async function run() {
 
         response = await test.getDeployDocCount()
         LOG(`deployedCount().call() => ${response}`)
-        let newContractIdx = response - 1
-        let getObj = { "inputs":[{"name": "idx","type": "uint256"}], "name":"deployedContractInfo", "type":"function" }
 
-        if (newContractIdx > 0) {
+        if (response > 0) {
             for (let i=0; i<response; i++) {
                 let docContractAddress = await test.getDeployDocAddress(i)
                 let docContractAddressX = await test.getFromDocManager(getObj, [ i ])
                 test.setDocServiceContractAddress(docContractAddress)
                 let docCount = await test.getDocCount()
-                LOG(`deployedAddress(${i}).call() => ${docContractAddress} (docuCount: ${docCount}) ${JSON.stringify(docContractAddressX)}`)
+                let contractType = docContractAddressX.substring(129, 130)
+                let deployTime = Web3Utils.hexToNumber('0x' + docContractAddressX.substring(130))
+                //LOG(`${deployTime} - ${docContractAddressX.substring(130)}`)
+                LOG(`deployedAddress(${i}).call() => ${docContractAddress} (docuCount: ${docCount}, serviceType: ${contractType}, deployTimestamp: ${deployTime})`)
+                //LOG(`deployedAddress(${i}).call() => resp: ${JSON.stringify(docContractAddressX)}`)
             }
         }
 	}
@@ -67,6 +71,6 @@ async function run() {
 	}
 	LOG('  =======  done  ======')
 }
-
+0x000000000000000000000000bb5a464eeb38230fc85f3c7c132e7bff4683ab9400000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000063194cb3
 init()
 run()

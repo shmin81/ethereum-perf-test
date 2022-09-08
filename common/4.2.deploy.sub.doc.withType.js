@@ -92,8 +92,6 @@ async function run() {
             if (txResults.status != true) {
                 LOG(` *** send tx - Failed ***`)
                 return;
-                //LOG (` * contractAddress: ${txResults.contractAddress}`)
-                //utils.deployNewChainzDocContract(txResults.contractAddress, txResults.transactionHash)
             }
         }
 

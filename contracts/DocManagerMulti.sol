@@ -49,19 +49,19 @@ contract DocManagerMulti {
         owners[msg.sender] = true;
 	}
 
-    function createDocIdentity() public onlyOwner() returns(address) {
+    function createDocIdentity() public onlyOwner() returns(bool) {
         ChainZDoc identity = new ChainZDoc();
         deployedContracts[contractDeployCount] = address(identity);
         deployedContractInfos[contractDeployCount].contractAddress = address(identity);
-        deployedContractInfos[contractDeployCount].contractType = 1;
+        deployedContractInfos[contractDeployCount].contractType = 0;
         deployedContractInfos[contractDeployCount].deployTimestamp = block.timestamp;
         contractDeployCount++;
         //contractDeployedTime[address(identity)] = block.timestamp;
         emit LogChainZDocCreated(address(identity), msg.sender);
-        return address(identity);
+        return true;
     }
 
-    function createDocIdentityA() public onlyOwner() returns(address) {
+    function createDocIdentityA() public onlyOwner() returns(bool) {
         ChainZDocA identity = new ChainZDocA();
         deployedContracts[contractDeployCount] = address(identity);
         deployedContractInfos[contractDeployCount].contractAddress = address(identity);
@@ -70,10 +70,10 @@ contract DocManagerMulti {
         contractDeployCount++;
         //contractDeployedTime[address(identity)] = block.timestamp;
         emit LogChainZDocCreated(address(identity), msg.sender);
-        return address(identity);
+        return true;
     }
 
-    function createDocIdentityB() public onlyOwner() returns(address) {
+    function createDocIdentityB() public onlyOwner() returns(bool) {
         ChainZDocB identity = new ChainZDocB();
         deployedContracts[contractDeployCount] = address(identity);
         deployedContractInfos[contractDeployCount].contractAddress = address(identity);
@@ -82,10 +82,10 @@ contract DocManagerMulti {
         contractDeployCount++;
         //contractDeployedTime[address(identity)] = block.timestamp;
         emit LogChainZDocCreated(address(identity), msg.sender);
-        return address(identity);
+        return true;
     }
 
-    function createDocIdentityC() public onlyOwner() returns(address) {
+    function createDocIdentityC() public onlyOwner() returns(bool) {
         ChainZDocC identity = new ChainZDocC();
         deployedContracts[contractDeployCount] = address(identity);
         deployedContractInfos[contractDeployCount].contractAddress = address(identity);
@@ -95,7 +95,7 @@ contract DocManagerMulti {
         //contractDeployedTime[address(identity)] = block.timestamp;
         emit LogChainZDocCreated(address(identity), msg.sender);
         
-        return address(identity);
+        return true;
     }
 
     function deployedCount() public view returns(uint) {

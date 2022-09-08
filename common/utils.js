@@ -167,7 +167,7 @@ exports.httpGetTxReceipt = function (_url, _txid) {
 
     return new Promise(function(resolve, reject) {
         // resolve(retryTest(_request))
-        retryResponse(_request, resolve, reject)
+        retryResponse(_request, _txid, resolve, reject)
     })
 }
 
@@ -192,7 +192,7 @@ async function retryTest(req) {
     })
 }
 
-let retryResponse = function(req, res, rej) {
+let retryResponse = function(req, txid, res, rej) {
     tryCnt = 0
     //console.log('*** retryResponse')
     let timerId = setInterval(function() { 
@@ -202,7 +202,7 @@ let retryResponse = function(req, res, rej) {
             if (receipt == null) {
                 if (tryCnt++ >= chkMaxCount) {
                     clearTimeout(timerId)
-                    rej('failed (not found tx receipt)')
+                    rej(`failed (not found tx receipt - ${txid})`)
                 }
             }
             else {

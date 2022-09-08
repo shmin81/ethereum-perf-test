@@ -216,7 +216,7 @@ async function sendhttp() {
       }
     }
 
-    ERROR(JSON.stringify(response, null, 2))
+    ERROR(JSON.stringify(response.body, null, 2))
     // process.exit(1)
     isRunning = false;
 }

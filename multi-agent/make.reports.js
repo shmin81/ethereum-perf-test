@@ -31,7 +31,7 @@ if (fs.existsSync(nodeScript) == false) {
 
 function firstProcess(id, inputConf) {
 
-  INFO(`*${id}* new process => node ${nodeScript} ${confPath}, ${inputConf}, ${id}`);
+  INFO(`*${id}* new process => node ${nodeScript} ${confPath} ${inputConf} ${id}`);
 
   return new Promise(function(resolve, reject) {
     let process1 = spawn("node", [ nodeScript, confPath, inputConf, id ]);

@@ -7,7 +7,7 @@ let confPath = null
 let confContent = null;
 let conf = null;
 exports.loadConf = function(_confPath) {
-    console.log('loadConf', _confPath)
+    //console.log('loadConf', _confPath)
     confPath = checkPath(_confPath)
     conf = getConfig(confPath)
     //confContent = fs.readFileSync(confPath, 'utf8')
@@ -15,7 +15,7 @@ exports.loadConf = function(_confPath) {
 
     // check data
     if (conf.accountfile == undefined) {
-        console.log('retry', conf)
+        //console.log('retry', conf)
         confPath = checkPath(conf)
         conf = getConfig(confPath)
     }
@@ -49,7 +49,7 @@ exports.getweb3HttpHeader = function (conf) {
 }
 
 function checkPath(_confPath) {
-    console.log('checkPath', _confPath)
+    //console.log('checkPath', _confPath)
     if (fs.existsSync(_confPath)) {
         return _confPath
     }
@@ -87,7 +87,7 @@ function checkPath(_confPath) {
 }
 
 function getConfig(path) {
-    console.log('getConfig', path)
+    //console.log('getConfig', path)
     let confContent = fs.readFileSync(path, 'utf8')
     if (confContent.startsWith('{') || confContent.startsWith('[')) {
         return JSON.parse(confContent)

@@ -100,11 +100,13 @@ server.listen(port, async () => {
     test.setTestEnv(httpRpcUrl, conf)
 
     accountFrom = utils.convertPrivKeyToAccount(conf.ownerPrivKey)
-	  INFO(`deploy sender: ${accountFrom.address}`)
-
+    
     await setDocServiceAddress(minerIdx, endpointConf.length)
 
-    INFO(`gas: (deploy docService) ${await test.deployEstimateGas(accountFrom.address)}`)
+    if (minerIdx == 0) {
+	    INFO(`deploy sender: ${accountFrom.address}`)
+      INFO(`gas: (deploy docService) ${await test.deployEstimateGas(accountFrom.address)}`)
+    }
     INFO(`gas: (create document) ${await test.createEstimateGas(accountFrom.address)}`)
     
     for (let i=0; i<acountCnt; i++) {
@@ -151,11 +153,10 @@ async function setDocServiceAddress(nodeIdx, nodeCnt) {
     ERROR('need to deploy docService')
     process.exit(1)
   }
-  INFO(`set docService(${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
+  INFO(`set docService (idx:${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
   docServiceCnt += nodeIdx
   nodeCount = nodeCnt
   nodeIndex = nodeIdx
-
 }
 
 // 필요하다면 배포도 수행하도록 변경

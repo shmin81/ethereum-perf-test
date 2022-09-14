@@ -3,7 +3,7 @@ const fs = require('fs');
 const Web3 = require('web3');
 const utils = require('../common/utils')
 
-const web3 = new Web3(new Web3.providers.HttpProvider('http://dev-testnet.chainz.biz'));
+
 
 let accountCounts = 10  // max: 9999
 
@@ -13,15 +13,43 @@ const PrePrivKeyFrom = '0x202101010000000000000000000000000000000000000000000000
 const PrePrivKeyTo   = '0x20210505000000000000000000000000000000000000000000000000000000'; // string 
 
 const args = process.argv.slice(2)
-if (args.length == 1) {
-    accountCounts = Number(args[0])
+if (args.length == 0) {
+    console.log('node  0.create_accounts.js  configPath  [ numberOfAccounts(10) ]')
+    process.exit(0)
 }
+
+let confPath = args[0]
+if (args.length == 2) {
+    accountCounts = Number(args[1])
+}
+const conf = utils.loadConf(confPath)
+//console.log(JSON.stringify(conf))
+const endpointConf = utils.loadJson(conf.endpointfile)
+const httpRpcUrl = endpointConf[0]
+console.log(`RPC: ${httpRpcUrl}`)
+
+let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+const web3 = new Web3(httpProvider)
+
 console.log('creating...', accountCounts, ' users')
 utils.sleep(2000)
 
 var writer = fs.createWriteStream(pkListFile);
 writer.write('[{\n');
 
+for (let i = 1; i < accountCounts; i++) {
+
+    makeAcc(i);
+    writer.write('}, {\n');
+}
+
+makeAcc(accountCounts);
+writer.write('}]\n');
+
+writer.end();
+writer.on('finish', function () {
+    console.log('finish');
+});
 
 function makeAcc(num) {
     let hexNum = num.toString(16);
@@ -48,17 +76,3 @@ function makeAcc(num) {
 
     console.log(`User-${num.toString().padStart(4,'0')}`);
 }
-
-for (let i = 1; i < accountCounts; i++) {
-
-    makeAcc(i);
-    writer.write('}, {\n');
-}
-
-makeAcc(accountCounts);
-writer.write('}]\n');
-
-writer.end();
-writer.on('finish', function () {
-    console.log('finish');
-});

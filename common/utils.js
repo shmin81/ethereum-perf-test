@@ -1,19 +1,27 @@
 const fs = require('fs');
 
 const ERROR = (msg) => console.error(`${new Date().toISOString()} [ERROR] ${msg}`)
+const rootConfigDir = '../'
 const defaultConfigDir = '../configs/'
 let confPath = null
 let confContent = null;
 let conf = null;
 exports.loadConf = function(_confPath) {
-
+    console.log('loadConf', _confPath)
     confPath = checkPath(_confPath)
-    
-    confContent = fs.readFileSync(confPath, 'utf8')
-    // const conf = JSON.parse(confContent)
-    conf = JSON.parse(confContent)
+    conf = getConfig(confPath)
+    //confContent = fs.readFileSync(confPath, 'utf8')
+    //conf = JSON.parse(confContent)
 
-    if (conf.ownerPrivKey.indexOf('0x') == 0){
+    // check data
+    if (conf.accountfile == undefined) {
+        console.log('retry', conf)
+        confPath = checkPath(conf)
+        conf = getConfig(confPath)
+    }
+
+    //if (conf.ownerPrivKey.indexOf('0x') == 0){
+    if (conf.ownerPrivKey.startsWith('0x')){
         conf.ownerPrivKey = conf.ownerPrivKey.substring(2)
     }
 
@@ -41,16 +49,52 @@ exports.getweb3HttpHeader = function (conf) {
 }
 
 function checkPath(_confPath) {
-    if (fs.existsSync(_confPath) == false) {
-        if (fs.existsSync(defaultConfigDir + _confPath) == false) {
-            ERROR(`Not found: ${_confPath}`)
-            process.exit(1)
+    console.log('checkPath', _confPath)
+    if (fs.existsSync(_confPath)) {
+        return _confPath
+    }
+    if (!_confPath.startsWith(rootConfigDir)) {
+        if (fs.existsSync(rootConfigDir + _confPath)) {
+            return rootConfigDir + _confPath
         }
-        else {
+        if (fs.existsSync(defaultConfigDir + _confPath)) {
             return defaultConfigDir + _confPath
         }
     }
-    return _confPath
+    if (!_confPath.toString().toLowerCase().endsWith('.json')){
+        return checkPath(_confPath + '.json')
+    }
+
+    ERROR(`Not found: ${_confPath}`)
+    process.exit(1)
+
+    // if (fs.existsSync(_confPath) == false) {
+    //     if (fs.existsSync(defaultConfigDir + _confPath) == false) {
+    //         if (!_confPath.toString().toLowerCase().endsWith('.json')){
+    //             _confPath = _confPath + '.json'
+    //             if (fs.existsSync(defaultConfigDir + _confPath)) {
+    //                 return defaultConfigDir + _confPath
+    //             }
+    //         }
+    //         ERROR(`Not found: ${_confPath}`)
+    //         process.exit(1)
+    //     }
+    //     else {
+    //         return defaultConfigDir + _confPath
+    //     }
+    // }
+    // return _confPath
+}
+
+function getConfig(path) {
+    console.log('getConfig', path)
+    let confContent = fs.readFileSync(path, 'utf8')
+    if (confContent.startsWith('{') || confContent.startsWith('[')) {
+        return JSON.parse(confContent)
+    }
+    else {
+        return confContent
+    }
 }
 
 exports.loadJson = function (path) {

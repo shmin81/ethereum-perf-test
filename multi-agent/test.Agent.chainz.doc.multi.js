@@ -22,22 +22,18 @@ const DEBUG = (msg, showLog=true) => {
   }
 }
 //////////////////////////////////////
+// Under construction!
+// 
 // 1. starting this server, DocManager is deploy new docService contract? (or get docuCount from deployed target docService)
 //  1.1 check docService count and docuCount => if need, deploy? what is condition? 
 // 2. when deploy and change? (when added over 100,000 docu, deploy new contract. and when added 200,000 docu , change target new contract.)
-//  2.1 if 4 node, id 0 node only deploy. and each node change 50000 tx. (deploy is not ready, need to deploy before test)
-// 3. How to make new docId? senderAddress + nonce (8 digit)
-//  3.1 matching: 4 agent nodes -> 1 target contract 
-//////////////////////////////////////
-const docuMaxCount=300000
-const deployDocuCount=docuMaxCount-200000
-const readyToChangeCount=docuMaxCount-50000 // agent 실행시에만 사용됨. docuMaxCount와 동일하게 가도 될듯(?)
-//////////////////////////////////////
+// 3. How to make new docId? index of target docService from DocManager + doc sequence of target docService (8 digit)
+// 4 agent node -> 4 target contract (each contract) 
 
 // Environment variables
 const args = process.argv.slice(2)
 if (args.length < 3) {
-  console.log('node  test.Agent.chainz.doc.single.js  portNumber  minerIdx  accountStartIdx configPath [ debug(false) ]')
+  console.log('node  test.Agent.chainz.doc.js  portNumber  minerIdx  accountStartIdx configPath [ debug(false) ]')
   process.exit(0)
 }
 const port = Number(args[0])
@@ -55,10 +51,6 @@ if (args.length == 5) {
     saveLog = true
     fs.writeFileSync(debugLog, `${new Date().toISOString()} [INFO] ${port} ${minerIdx} ${startIdx} ${confPath}\n`)
   }
-}
-let deployEnabled = false
-if (minerIdx == 0) {
-  deployEnabled = true
 }
 
 // In-memory status
@@ -126,101 +118,87 @@ server.on('error', (error) => {
   //process.exit(1)
 })
 
-let nodeCount
-let nodeIndex
-let docServiceIdx=-1
+async function deployNewService() {
+
+  ERROR('Need to deploy DocService')
+  process.exit(1)
+  // let resp = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
+  // let req = test.deployReq(conf.ownerPrivKey, Web3Utils.hexToNumber(resp))
+  // resp = await utils.sendHttp(req)
+  // // txReceipt?
+  // test.setDocServiceContractAddress()
+}
+
+let docServiceIdx=0
 let docServiceCnt=0
 async function setDocServiceAddress(nodeIdx, nodeCnt) {
-  
   let numDeploy = await test.getDeployDocCount()
-  // if (numDeploy < 1) {
-  //   await deployNewService()
-  // }
-
-  let targetAddress = null
-  for (let j=0; j<numDeploy; j++) {
-    targetAddress = await test.getDeployDocAddress(j)
+  docServiceIdx = numDeploy - nodeCnt + nodeIdx
+  if (docServiceIdx < 0) {
+    await deployNewService()
+  }
+  else {
+    let targetAddress = await test.getDeployDocAddress(docServiceIdx)
     test.setDocServiceContractAddress(targetAddress)
     docServiceCnt = await test.getDocCount()
-    if (docServiceCnt < readyToChangeCount) {
-      docServiceIdx = j
-      break;
-    }
+    INFO(`set docService(${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
   }
-  if (docServiceIdx == -1) {
-    ERROR('need to deploy docService')
-    process.exit(1)
-  }
-  INFO(`set docService(${docServiceIdx}): ${targetAddress} - ${docServiceCnt}`)
-  docServiceCnt += nodeIdx
-  nodeCount = nodeCnt
-  nodeIndex = nodeIdx
-
-}
-
-// 필요하다면 배포도 수행하도록 변경
-async function prepareNextDocServiceAddress(_docServiceIdx) {
-
-  _docServiceIdx++
-  let numDeploy = await test.getDeployDocCount()
-
-  // check: need to deploy
-  if (_docServiceIdx >= numDeploy) {
-    
-    if (deployEnabled) {
-      await deployNewService();
-    } 
-    else {
-      // deploy는 다른 노드에서 수행할 것임
-      readyNext = false
-      return
-    }
-    numDeploy = await test.getDeployDocCount()
-    if (_docServiceIdx >= numDeploy) {
-      return prepareNextDocServiceAddress(_docServiceIdx-1)
-    }
-  }
-  let targetAddress = await test.getDeployDocAddress(_docServiceIdx)
-  let _docServiceCnt = await test.getDocCount(targetAddress)
-  
-  //INFO(`prepare docService(${_docServiceIdx}): ${targetAddress} - ${_docServiceCnt}`)
-  if (_docServiceCnt > readyToChangeCount) {
-    // next contract
-    return prepareNextDocServiceAddress(_docServiceIdx)
-  }
-
-  _docServiceCnt += nodeIndex
-  prepareNextContract = {
-    addr: targetAddress,
-    idx: _docServiceIdx,
-    cnt: _docServiceCnt 
-  }
-  INFO(`prepared: ${JSON.stringify(prepareNextContract)}`)
-}
-
-async function deployNewService() {
-  INFO('*** Need to deploy DocService')
-  // ERROR('Need to deploy DocService')
-  // process.exit(1)
-  let req = test.ethReq('eth_getTransactionCount', [accountFrom.address, 'latest'])
-  let res = await utils.sendHttp(req)
-  req = test.deployReq(accountFrom.privKeyBuf, Web3Utils.hexToNumber(res))
-  res = await utils.sendHttp(req)
-  let txReceipt = await utils.httpGetTxReceipt(httpRpcUrl, res)
-  INFO(`deployed docService ${JSON.stringify(txReceipt)}`)
-  // 테스트 진행 순서 관리용
-  return new Promise(function(resolve, reject) {
-    resolve(true)
-  })
 }
 
 //let documentId = 1
 //let fileHash = '0x724ad11f03ec789913d203e50bbf4f8ebe391c71d9aad551fbb55e42c69ff814'
 let expiredDate = Math.floor(+ new Date() / 1000) + 365 * 24 * 60 * 60 // 1년 후?
 
+const deployDocu = async (req, res) => {
+ 
+  const accIdLock = acountLock++
+  if (acountLock == acountCnt) {
+    acountLock = 0;
+  }
+	const nonce = accounts[accIdLock].nonceLock++
+  const acc = accounts[accIdLock]
 
-let prepareNextContract = null
-let readyNext = false
+  let documentId = Web3Utils.hexToNumberString(docServiceIdx + docNum.toString())
+  let fileHash = '0x' + crypto.createHash('sha256').update(documentId + nonce).digest('hex');
+  DEBUG(`deploy new docService`)
+  
+  const request = test.deployReq(acc.senderPrivKeyBytes, nonce)
+  const reqId = request.body.id;
+
+  let sendTime = new Date()
+  httpRequest.post(request)
+    .then(response => {
+      try {
+        if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
+          const output = { result: true, accIdx: accIdLock, nonce, res: `${response.body.result}`, sendTime, id: reqId }
+          //INFO(`Success! - ${JSON.stringify(output)}`)
+          DEBUG(`${sendTime.valueOf()} ${response.body.result}`)
+          res.status(200)
+          res.set('Content-Type', 'application/json;charset=utf8')
+          res.json(output)
+          successCount++
+        } else {
+          // console.dir(response)
+          const output = { result: false, accIdx: accIdLock, nonce, req: request, res: response.body.error }
+          ERROR(`Need check! - ${JSON.stringify(output)}`)
+          res.status(500)
+          res.set('Content-Type', 'application/json;charset=utf8')
+          res.json(output)
+        }
+      } catch (err) {
+        ERROR(`It SHOULD NOT happen! - ${err}`)
+        //process.exit(1)
+      }
+    })
+    .catch(err => {
+      const output = { result: false, accIdx: accIdLock, nonce, req: request, res: `NA`, error: `${err}` }
+      ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
+      res.status(500)
+      res.set('Content-Type', 'application/json;charset=utf8')
+      res.json(output)
+    })
+}
+
 const createDocu = async (req, res) => {
  
   const accIdLock = acountLock++
@@ -229,31 +207,14 @@ const createDocu = async (req, res) => {
   }
 	const nonce = accounts[accIdLock].nonceLock++
   //const docNum = accounts[accIdLock].docuCnt++
-  //const docNum = docServiceCnt++
-
+  const docNum = docServiceCnt++
   const acc = accounts[accIdLock]
-  if (docServiceCnt >= docuMaxCount) {
-    // change target contract
-    test.setDocServiceContractAddress(prepareNextContract.addr)
-    docServiceCnt = prepareNextContract.cnt
-    docServiceIdx = prepareNextContract.idx
-    readyNext = false
-    INFO(`changed: ${JSON.stringify(prepareNextContract)}`)
-  }
-  else if (deployDocuCount < docServiceCnt) {
-    if (readyNext == false) {
-      readyNext = true
-      prepareNextDocServiceAddress(docServiceIdx)
-    }
-  }
-  docServiceCnt += nodeCount
 
-  let documentId = Web3Utils.hexToNumberString(acc.sender + nonce.toString().padStart(8, '0'))
+  let documentId = parseInt(docServiceIdx + docNum.toString().padStart(8, '0'))
   let fileHash = '0x' + crypto.createHash('sha256').update(documentId.toString()).digest('hex')
-  let regTimestamp = Math.floor(+ new Date() / 1000)
-  DEBUG(`create docID: ${documentId} [${acc.sender} ${nonce}] -> filehash: ${fileHash}`)
+  DEBUG(`create docID: ${documentId} [${docServiceIdx} ${docNum}] -> filehash: ${fileHash}, expiredDate: ${expiredDate}`)
   
-  const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, regTimestamp, ++expiredDate)
+  const request = test.createReq(acc.senderPrivKeyBytes, nonce, documentId, fileHash, expiredDate++)
   const reqId = request.body.id;
 
   let sendTime = new Date()
@@ -368,7 +329,7 @@ function getParams(_reqBody) {
 }
 
 const router = express.Router()
-//router.route('/prepare').post(deployDocu)   // deployDocument
+router.route('/prepare').post(deployDocu)   // deployDocument
 router.route('/transfer').post(createDocu)  // createDocument
 //router.route('/transferMulti').post(updateDocu2)  // createDocument2
 router.route('/transferCount').get(transferCount)

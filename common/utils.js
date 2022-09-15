@@ -5,12 +5,12 @@ const rootConfigDir = '../'
 const defaultConfigDir = '../configs/'
 let confPath = null
 let confContent = null;
-let conf = null;
+//let conf = null;
 exports.loadConf = function(_confPath) {
     //console.log('loadConf', _confPath)
     confPath = checkPath(_confPath)
-    conf = getConfig(confPath)
-    //confContent = fs.readFileSync(confPath, 'utf8')
+    let conf = getConfig(confPath, false)
+    //let confContent = fs.readFileSync(confPath, 'utf8')
     //conf = JSON.parse(confContent)
 
     // check data
@@ -86,13 +86,17 @@ function checkPath(_confPath) {
     // return _confPath
 }
 
-function getConfig(path) {
+function getConfig(path, strict=true) {
     //console.log('getConfig', path)
-    let confContent = fs.readFileSync(path, 'utf8')
+    confContent = fs.readFileSync(path, 'utf8')
     if (confContent.startsWith('{') || confContent.startsWith('[')) {
         return JSON.parse(confContent)
     }
     else {
+        if (strict) { 
+            ERROR(`wrong file contents [${path}]`) 
+            process.exit(1)
+        }
         return confContent
     }
 }

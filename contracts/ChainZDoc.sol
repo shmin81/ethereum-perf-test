@@ -3,14 +3,14 @@ pragma solidity >0.4.23 <0.9.0;
 
 contract ChainZDoc {
 
-    enum Validation { Valid, Invalid, Expired, Notfound }
+    enum Validation { Valid, Invalid, Expired }
 
     // TO-DO: 문서의 그룹핑이 필요하지 않을까? 예를 들어 인입이 A시스템읹지? B시스템인지?
     struct Document {
         //uint256 id;  // mapping의 key로 사용되므로 중복임
         bytes32 fileHash;
         //uint128 regTimestamp;
-        uint256 expTimestamp;
+        uint128 expTimestamp;
         // address owner;
         // bool    isActive;
     }
@@ -21,7 +21,7 @@ contract ChainZDoc {
     // TO-DO: 함수에 아래 modifier 적용할 것
     /*
     modifier isActive(bool _isActive){
-      require( _isActive == false, "ERROR_DOCUMENT_ID_EXISTS" );
+      require( _isActive == false, "DOCUMENT_ID_NOT_EXIST" );
       _;
     }
     */
@@ -29,13 +29,13 @@ contract ChainZDoc {
     // TO-DO Event 추가 검토
     event CreateDocument (
         uint256 docuId,
-        uint256 regTimestamp,
+        uint128 regTimestamp,
         address regUser
     );
 
     event DeleteDocument (
         uint256 docuId,
-        address worker
+        address delUser
     );
 
     /**
@@ -60,7 +60,7 @@ contract ChainZDoc {
         uint128 _expTimestamp
     ) public returns(bool) {
 
-        require( documents[ _id ].expTimestamp == 0, "DOCUMENT_ID_ALREADY_EXISTED");
+        require( documents[ _id ].expTimestamp == 0, "DOCUMENT_ID_ALREADY_EXIST");
 
         // documents[ _id ].id = _id ;
         documents[ _id ].fileHash = _fileHash;
@@ -82,7 +82,7 @@ contract ChainZDoc {
     function deleteDocument (
         uint256 _id
     ) public returns(bool) {
-        require( documents[ _id ].expTimestamp != 0, "DOCUMENT_ID_NOT_EXISTS");
+        require( documents[ _id ].expTimestamp != 0, "DOCUMENT_ID_NOT_EXIST");
         // // (장기적인) TO-DO owner만이 삭제할 수 있음
         // documents[ _id ].isActive = false;
 
@@ -109,16 +109,13 @@ contract ChainZDoc {
         view
         returns (Validation) {
 
-        require( documents[ _id ].expTimestamp != 0, "DOCUMENT_ID_NOT_EXISTS");
+        require( documents[ _id ].expTimestamp != 0, "DOCUMENT_ID_NOT_EXIST");
 
         Document memory document = documents[_id];
-        if( document.expTimestamp == 0) {
-            return Validation.Notfound;
-        }
-        else if( document.fileHash != _fileHash ) {
+        if( document.fileHash != _fileHash ) {
           return Validation.Invalid;     // Document hash is different 
         }
-        else if( document.expTimestamp > 0 && block.timestamp >= document.expTimestamp ) {
+        else if( block.timestamp >= document.expTimestamp ) {
             return Validation.Expired;   // Document is expired
         } 
         else {
@@ -146,10 +143,10 @@ contract ChainZDoc {
         returns (
             uint256 id,
             bytes32 fileHash,
-            uint256 expTimestamp
+            uint128 expTimestamp
         ) {
 
-        require( documents[ _id ].expTimestamp != 0, "DOCUMENT_ID_NOT_EXISTS");
+        require( documents[ _id ].expTimestamp != 0, "DOCUMENT_ID_NOT_EXIST");
 
         Document memory document = documents[_id];
         return (

@@ -31,11 +31,15 @@ async function init() {
     httpRpcUrl = endpointConf[0]
     LOG(`RPC: ${httpRpcUrl}`)
 
-	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+	//let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl);
     web3 = new Web3(httpProvider)
 
 	accountFrom = utils.convertPrivKeyToAccount(conf.ownerPrivKey)
 	LOG(`Sender: ${accountFrom.address}`)
+
+	let results = await web3.eth.getBlockNumber()
+	LOG(`web3.eth.getBlockNumber() => ${results}`)
 }
 
 async function run() {
@@ -75,5 +79,6 @@ async function run() {
 	LOG('  =======  done  ======')
 }
 
-init()
-run()
+init().then(() => {
+	return run()
+})

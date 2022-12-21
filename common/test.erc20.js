@@ -154,13 +154,13 @@ const balanceOfBody = {
     params:[],
     id: 0
 }
-exports.balanceOf = function (account) {
+exports.balanceOf = function (account, targetBlockParam="latest") {
 
     const txData = {
         to: contractAddr,
         data: ABIHelper.getCallDataByABI(balanceOfObj, [`${account}`])
     }
-    balanceOfBody.params = [txData, "latest"]
+    balanceOfBody.params = [txData, targetBlockParam]
     balanceOfBody.id++
     //console.log(txData)
     request.body = balanceOfBody
@@ -173,11 +173,14 @@ exports.balanceOf = function (account) {
                 resolve(Web3_Utils.hexToNumber(response.body.result))
             }
             else {
-                console.error(response)
+                console.error(response.body)
+                //reject(response.body)
             }
         })
         .catch(err => {
-            console.error(err)
+            console.error('error')
+                console.error(err)
+                //reject(err)
         })
     })
 }

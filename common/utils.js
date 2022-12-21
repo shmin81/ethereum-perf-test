@@ -39,7 +39,7 @@ exports.getweb3HttpHeader = function (conf) {
 
     const httpOptions = {
         headers: [
-            { name: "Content-Type", value: "application/json"}
+            { name: "Content-Type", value: "application/json" }
         ]
     };
     if (conf.jwt != undefined && conf.jwt.length > 30) {
@@ -159,6 +159,13 @@ exports.deployNewDocMgmtContract = function (contractAddress, transactionHash=nu
 //     fs.writeFileSync(confPath, outStr)
 //     // log ??
 // }
+exports.deployDataAppendContract = function (contractAddress, transactionHash=null) {
+    const confObj = JSON.parse(confContent)
+    confObj.dataAppendAddress = contractAddress
+    let outStr = JSON.stringify(confObj, null, 2)
+    fs.writeFileSync(confPath, outStr)
+    // log ??
+}
 
 const _request = {
     method: 'POST',
@@ -192,11 +199,38 @@ exports.sendHttp = function (req) {
                     resolve(response.body.result)
                 }
                 else {
-                    reject(response.body)
+                    console.error(req.body.method, response.body)
+                    //reject(response.body)
                 }
             })
             .catch(err => {
+                console.error(req.body.method, 'error')
                 console.error(err)
+                //reject(err)
+            })
+    })
+}
+
+/** use reject for fail */
+exports.sendHttp2 = function (req) {
+    return new Promise(function(resolve, reject) {
+        httpRequest.post(req)
+            .then(response => {
+                //if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
+                if (response.body.error == undefined && response.body.result !== undefined) {
+                    resolve(response.body.result)
+                }
+                else {
+                    console.error(req.body.method, response.body)
+                    reject(response.body)
+                    //resolve(response.body)
+                }
+            })
+            .catch(err => {
+                console.error(req.body.method, 'error')
+                console.error(err)
+                reject(err)
+                //resolve(err)
             })
     })
 }

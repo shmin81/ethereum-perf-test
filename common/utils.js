@@ -255,17 +255,16 @@ exports.httpGetTxReceipt = function (_url, _txid) {
 
 const interval = 1000
 const chkMaxCount = 120
-let tryCnt = 0
 async function retryTest(req) {
     let response = null
-    tryCnt = 0
+    let tryCnt = 0
     while (response == null) {
         let wakeUpTime = Date.now() + interval;
         while (Date.now() < wakeUpTime) { }
         //console.log('try ', tryCnt)
-        response = await sendhttpx(req)
+        response = await sendHttpSync(req)
         if (response == null && tryCnt++ >= chkMaxCount){
-            response = 'failed'
+            response = 'failed by time out'
         }
     }
 
@@ -275,16 +274,16 @@ async function retryTest(req) {
 }
 
 let retryResponse = function(req, txid, res, rej) {
-    tryCnt = 0
+    let tryCnt = 0
     //console.log('*** retryResponse')
     let timerId = setInterval(function() { 
         //console.log('*** sendhttpx', tryCnt)
-        sendhttpx(req).then(receipt => {
+        sendHttpSync(req).then(receipt => {
             //console.log('*** response', receipt)
             if (receipt == null) {
                 if (tryCnt++ >= chkMaxCount) {
                     clearTimeout(timerId)
-                    rej(`failed (not found tx receipt - ${txid})`)
+                    rej(`failed by time out (not found tx receipt - ${txid})`)
                 }
             }
             else {
@@ -295,7 +294,7 @@ let retryResponse = function(req, txid, res, rej) {
     }, interval);
 }
 
-async function sendhttpx(req) {
+async function sendHttpSync(req) {
     return new Promise(function(resolve, reject) {
         httpRequest.post(req)
             .then(response => {

@@ -19,7 +19,7 @@ let apiName = 'transfer'
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
     console.log('Wrong input params - "config-path" [ "agent_ip(localhost)" "Interval(1000 ms)" "MaxCount(100,000,000,000)" "apiName(transfer)" ]');
-    console.log('  ex) node multi_runner.js ../configs/local.cbdc.test.json localhost 500 1000');
+    console.log('  ex) node runner.for.multi.nodes.js ../configs/local.cbdc.test.json localhost 500 1000');
     process.exit(2); 
 }
 

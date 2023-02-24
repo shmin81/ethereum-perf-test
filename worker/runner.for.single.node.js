@@ -17,7 +17,7 @@ let apiName = 'transfer'
 const args = process.argv.slice(2);
 if (args[0] == undefined) {
     console.log('Wrong input params - "agent_url" [ "Interval(1000 ms)" "MaxCount(100,000,000,000)"  "api(transfer)" ]');
-    console.log('  ex) node single_runner.js localhost:10080 500 1000');
+    console.log('  ex) node runner.for.single.node.js localhost:10080 500 1000');
     process.exit(2); 
 }
 

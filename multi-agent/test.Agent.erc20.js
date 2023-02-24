@@ -73,7 +73,8 @@ server.listen(port, async () => {
     let connection = null
     let httpProvider = {}
 
-    httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+    httpProvider = new Web3.providers.HttpProvider(httpRpcUrl);
+    //httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
     connection = new Web3(httpProvider)
 
     let chainId = await connection.eth.getChainId()

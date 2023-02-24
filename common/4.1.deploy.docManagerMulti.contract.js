@@ -30,7 +30,8 @@ async function init() {
     httpRpcUrl = endpointConf[0]
     LOG(`RPC: ${httpRpcUrl}`)
 
-	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+	//let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl);
     web3 = new Web3(httpProvider)
 
 	accountFrom = utils.convertPrivKeyToAccount(conf.ownerPrivKey)

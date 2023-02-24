@@ -23,6 +23,7 @@ if (args[1] != undefined) {
     }
     else {
         console.log(`[skip] args[1] => '${args[1]}'`)
+        process.exit(1)
     }
 }
 
@@ -30,7 +31,7 @@ let deployFunctionName = 'createDocIdentity'
 if (args[2] != undefined && args[2] != null) {
     deployFunctionName = String(args[2])
 }
-LOG(`** deploy function: ${deployFunctionName}`)
+LOG(`** deploy function: ${deployFunctionName}, deployCnt: ${deployCount}`)
 
 let deployObj = {
     "inputs":[],
@@ -50,7 +51,7 @@ async function init() {
 	LOG(JSON.stringify(conf))
 
     accountFrom = utils.convertPrivKeyToAccount(conf.ownerPrivKey)
-	LOG(`Sender: ${accountFrom.address}`)
+	// LOG(`Sender: ${accountFrom.address}`)
 	
 	const endpointConf = utils.loadJson(conf.endpointfile)
     httpRpcUrl = endpointConf[0]
@@ -60,7 +61,7 @@ async function init() {
     request = test.ethReq('eth_chainId')
     response = await utils.sendHttp(request)
     let chainId = Web3Utils.hexToNumber(response)
-    LOG(`ChainId: ${chainId} ${response}`)
+    // LOG(`ChainId: ${chainId} ${response}`)
     test.customChain(chainId)
 }
 
@@ -68,7 +69,7 @@ async function run() {
 	LOG('  =======  run  =======')
 	let results = null
 	try {
-        LOG(`deploy docService count: ${await test.getDeployDocCount()}`)
+        LOG(`deployed docService count: ${await test.getDeployDocCount()}`)
 
         LOG(`gas: (deploy docService) ${await test.deployEstimateGas(accountFrom.address)}`)
 
@@ -97,9 +98,9 @@ async function run() {
 
         response = await test.getDeployDocCount()
         LOG(`deployedCount().call() => ${response}`)
-        let newContractIdx = response - 1
+        //let newContractIdx = response - 1
 
-        if (newContractIdx > 0) {
+        if (response > 0) {
             for (let i=0; i<response; i++) {
                 let docContractAddress = await test.getDeployDocAddress(i)
                 test.setDocServiceContractAddress(docContractAddress)

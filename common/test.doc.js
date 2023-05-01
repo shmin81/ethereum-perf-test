@@ -16,7 +16,7 @@ const Web3_Utils = require('web3-utils')
 let contractAddr = null;
 let createGasHex = '0x249F0'
 let updateGasHex = '0x186A0'
-const gasUp = 1000
+const gasUp = 10000
 
 const createObj = {
     "inputs":[{"name": "_id","type": "uint256"},{"name": "_fileHash","type": "bytes32"},{"name": "_expTimestamp","type": "uint256"}],

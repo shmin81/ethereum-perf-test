@@ -1,4 +1,4 @@
-// erc20 transfer test
+// test
 const fs = require('fs')
 const http = require('http')
 const httpRequest = require('request-promise')

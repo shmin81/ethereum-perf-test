@@ -1,4 +1,4 @@
-// erc20 transfer test
+// test
 const fs = require('fs')
 const http = require('http')
 const httpRequest = require('request-promise')
@@ -57,6 +57,25 @@ async function prepare() {
   })
 }
 
+let minGasE = 1000000
+let minGasR = 1000000
+let maxGasE = 1
+let maxGasR = 1
+function setMinMax(_egas, _rgas) {
+  if (_egas < minGasE) {
+    minGasE = _egas
+  }
+  if (_egas > maxGasE) {
+    maxGasE = _egas
+  }
+  if (_rgas < minGasR) {
+    minGasR = _rgas
+  }
+  if (_rgas > maxGasR) {
+    maxGasR = _rgas
+  }
+}
+
 async function main() {
   let result = true
   await prepare()
@@ -75,14 +94,19 @@ async function main() {
       let reqq = utils.getPostRequest(httpRpcUrl, 'eth_getTransactionReceipt', [ strs[4] ])
       INFO(JSON.stringify(reqq))
       result = await utils.sendHttp2(reqq)
+      setMinMax(Number(strs[3]), Web3Utils.hexToNumber(result.gasUsed))
       WRITE(lineStr)
       WRITE(`,${result.status},${result.gasUsed},${Web3Utils.hexToNumberString(result.gasUsed)}\n`)
     }
     else {
+      setMinMax(Number(strs[3]), Number(strs[7]))
       WRITE(lineStr)
       WRITE('\n')
     }
-  }
+  } // end for
+  INFO('=======================')
+  INFO(`estmate gas: ${minGasE} ~ ${maxGasE} [${maxGasE - minGasE}]`)
+  INFO(`used gas: ${minGasR} ~ ${maxGasR} [${maxGasR - minGasR}]`)
 }
 
 main()

@@ -1,4 +1,4 @@
-// erc20 transfer test
+// test
 const fs = require('fs')
 const http = require('http')
 const httpRequest = require('request-promise')
@@ -100,29 +100,6 @@ async function updateDocu(idx1, docNum, documentId) {
 
   return new Promise(function(resolve, reject) {
     resolve(result)
-    /*
-    httpRequest.post(request)
-      .then(response => {
-        try {
-          if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.length === 66 && response.body.result.startsWith('0x')) {
-            const output = { result: true, docNum, nonce, res: `${response.body.result}`, id: reqId }
-            WRITE(`${response.body.result},`)
-            resolve(true)
-          } else {
-            const output = { result: false, docNum, nonce, req: request, res: response.body.error }
-            ERROR(`Need check! - ${JSON.stringify(output)}`)
-            reject(false)
-          }
-        } catch (err) {
-          ERROR(`It SHOULD NOT happen! - ${err}`)
-          reject(err)
-        }
-      })
-      .catch(err => {
-        const output = { result: false, docNum, nonce, req: request, res: `NA`, error: `${err}` }
-        ERROR(`Exception occurred! - ${JSON.stringify(output)}`)
-        reject(false)
-      })*/
   })
 }
 

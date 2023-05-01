@@ -96,7 +96,7 @@ async function main() {
       result = await utils.sendHttp2(reqq)
       setMinMax(Number(strs[3]), Web3Utils.hexToNumber(result.gasUsed))
       WRITE(lineStr)
-      WRITE(`,${result.status},${result.gasUsed},${Web3Utils.hexToNumberString(result.gasUsed)}\n`)
+      WRITE(`,${result.status},${result.gasUsed},${Web3Utils.hexToNumberString(result.gasUsed)},${Number(strs[3])-Web3Utils.hexToNumber(result.gasUsed)}\n`)
     }
     else {
       setMinMax(Number(strs[3]), Number(strs[7]))

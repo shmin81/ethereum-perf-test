@@ -8,6 +8,8 @@ const LOG = (msg) => console.log(`[${new Date().toISOString()}] ${typeof msg ===
 
 const bytecode = fs.readFileSync(
 	path.join(__dirname, "../contracts/SampleDoc.bin")
+	// path.join(__dirname, "../contracts/ChainzDocBMT.bin")
+	// path.join(__dirname, "../contracts/ChainzDocBMT2.bin")
 );
 
 const args = process.argv.slice(2)
@@ -29,7 +31,8 @@ async function init() {
     httpRpcUrl = endpointConf[0]
     LOG(`RPC: ${httpRpcUrl}`)
 
-	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+	// let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl, utils.getweb3HttpHeader(conf));
+	let httpProvider = new Web3.providers.HttpProvider(httpRpcUrl);
     web3 = new Web3(httpProvider)
 
 	accountFrom = utils.convertPrivKeyToAccount(conf.ownerPrivKey)

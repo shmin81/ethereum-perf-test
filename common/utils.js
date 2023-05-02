@@ -20,19 +20,34 @@ exports.loadConf = function(_confPath) {
         conf = getConfig(confPath)
     }
 
-    //if (conf.ownerPrivKey.indexOf('0x') == 0){
-    if (conf.ownerPrivKey.startsWith('0x')){
-        conf.ownerPrivKey = conf.ownerPrivKey.substring(2)
+    return initConf(conf)
+
+    // if (conf.ownerPrivKey.startsWith('0x')){
+    //     conf.ownerPrivKey = conf.ownerPrivKey.substring(2)
+    // }
+
+    // if (conf.jwt != undefined && conf.jwt.length > 30) {
+    //     conf.httpheaders= { "Content-Type": "application/json", "Authorization": "Bearer " + conf.jwt }
+    // }
+    // else {
+    //     conf.httpheaders= { "Content-Type": "application/json" }
+    // }
+
+    // return conf
+}
+
+function initConf(_confObj) {
+    if (_confObj.ownerPrivKey.startsWith('0x')){
+        _confObj.ownerPrivKey = _confObj.ownerPrivKey.substring(2)
     }
 
-    if (conf.jwt != undefined && conf.jwt.length > 30) {
-        conf.httpheaders= { "Content-Type": "application/json", "Authorization": "Bearer " + conf.jwt }
+    if (_confObj.jwt != undefined && _confObj.jwt.length > 30) {
+        _confObj.httpheaders= { "Content-Type": "application/json", "Authorization": "Bearer " + _confObj.jwt }
     }
     else {
-        conf.httpheaders= { "Content-Type": "application/json" }
+        _confObj.httpheaders= { "Content-Type": "application/json" }
     }
-
-    return conf
+    return _confObj
 }
 
 exports.getweb3HttpHeader = function (conf) {
@@ -128,12 +143,22 @@ exports.convertPrivKeyToAccount = function (privkey) {
         }
 }
 
+// ###########################
+
+function reloadConfig() {
+    if (confPath != null) {
+        let conf = getConfig(confPath)
+        return initConf(conf)
+    }
+}
+
 exports.deployNewErc20Contract = function (contractAddress, transactionHash=null) {
     const confObj = JSON.parse(confContent)
     confObj.erc20Address = contractAddress
     let outStr = JSON.stringify(confObj, null, 2)
     fs.writeFileSync(confPath, outStr)
     // log ??
+    return reloadConfig()
 }
 
 exports.deployNewDocuContract = function (contractAddress, transactionHash=null) {
@@ -142,6 +167,7 @@ exports.deployNewDocuContract = function (contractAddress, transactionHash=null)
     let outStr = JSON.stringify(confObj, null, 2)
     fs.writeFileSync(confPath, outStr)
     // log ??
+    return reloadConfig()
 }
 
 exports.deployNewDocMgmtContract = function (contractAddress, transactionHash=null) {
@@ -150,6 +176,7 @@ exports.deployNewDocMgmtContract = function (contractAddress, transactionHash=nu
     let outStr = JSON.stringify(confObj, null, 2)
     fs.writeFileSync(confPath, outStr)
     // log ??
+    return reloadConfig()
 }
 
 // exports.deployNewChainzDocContract = function (contractAddress, transactionHash=null) {
@@ -158,6 +185,7 @@ exports.deployNewDocMgmtContract = function (contractAddress, transactionHash=nu
 //     let outStr = JSON.stringify(confObj, null, 2)
 //     fs.writeFileSync(confPath, outStr)
 //     // log ??
+//     return reloadConfig()
 // }
 exports.deployDataAppendContract = function (contractAddress, transactionHash=null) {
     const confObj = JSON.parse(confContent)
@@ -165,7 +193,26 @@ exports.deployDataAppendContract = function (contractAddress, transactionHash=nu
     let outStr = JSON.stringify(confObj, null, 2)
     fs.writeFileSync(confPath, outStr)
     // log ??
+    return reloadConfig()
 }
+
+exports.updateEndpointFile = function (endpointfilename) {
+    const confObj = JSON.parse(confContent)
+    confObj.endpointfile = endpointfilename
+    let outStr = JSON.stringify(confObj, null, 2)
+    fs.writeFileSync(confPath, outStr)
+    return reloadConfig()
+}
+
+exports.updateAccountFile = function (accountfilename) {
+    const confObj = JSON.parse(confContent)
+    confObj.accountfile = accountfilename
+    let outStr = JSON.stringify(confObj, null, 2)
+    fs.writeFileSync(confPath, outStr)
+    reloadConfig()
+}
+
+// ###########################
 
 const _request = {
     method: 'POST',

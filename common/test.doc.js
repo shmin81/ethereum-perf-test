@@ -14,8 +14,8 @@ const { Transaction } = require('@ethereumjs/tx')
 const Web3_Utils = require('web3-utils')
 
 let contractAddr = null;
-let createGasHex = '0x249F0'
-let updateGasHex = '0x186A0'
+let createGasHex = '0x30D40'  // gas: 200000
+let updateGasHex = '0x186A0'  // gas: 100000
 const gasUp = 10000
 
 const createObj = {
@@ -57,6 +57,8 @@ const request = {
 exports.setTestEnv = function (_httpRpcUrl, _config, _gas=200000) {
 
     contractAddr = _config.docuAddress
+    createGasHex = Web3_Utils.toHex(_gas);
+    updateGasHex = Web3_Utils.toHex(Math.floor(_gas/2));
     request.uri = _httpRpcUrl
     request.headers = _config.httpheaders
 
@@ -90,8 +92,8 @@ exports.createEstimateGas = function (senderAddr, _id=12345, _fileHash='0x111111
                 //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
                 let _gas = Web3_Utils.hexToNumber(response.body.result)
                 createGasHex = Web3_Utils.numberToHex(_gas + gasUp)
-                // update가 불가능한 상황??
-                updateGasHex = Web3_Utils.numberToHex(Math.floor(_gas/3))
+                // update test가 불가능한 상황??
+                updateGasHex = Web3_Utils.numberToHex(Math.floor(_gas/3) + gasUp)
                 resolve(_gas)
             }
             else {

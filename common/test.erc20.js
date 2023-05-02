@@ -14,7 +14,9 @@ const { Transaction } = require('@ethereumjs/tx')
 const Web3_Utils = require('web3-utils')
 
 let contractAddr = null;
-let gasHex = null
+let gasHex = '0x11170'  // gas: 70000
+const gasUp = 1000
+
 const transferObj = {
     "inputs":[{"name": "_to","type": "address"},{"name": "_amount","type": "uint256"}],
     "name":"transfer",
@@ -71,7 +73,7 @@ exports.transferEstimateGas = function (senderAddr, receiver) {
             if (response.body.result !== undefined && typeof response.body.result === 'string' && response.body.result.startsWith('0x')) {
                 //console.log(account, Web3_Utils.hexToNumber(response.body.result), JSON.stringify(response))
                 let _gas = Web3_Utils.hexToNumber(response.body.result)
-                gasHex = Web3_Utils.numberToHex(_gas + 1000)
+                gasHex = Web3_Utils.numberToHex(_gas + gasUp)
                 resolve(_gas)
             }
             else {

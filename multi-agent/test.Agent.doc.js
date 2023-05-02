@@ -93,7 +93,9 @@ server.listen(port, async () => {
       if (i == 0) {
         INFO(`gas: (create document) ${await test.createEstimateGas(account.sender)}`)
       }
-
+      // 변경-중복에러 방지
+      account.docuCnt = account.nonceLock
+      /*
       account.docuCnt = await test.getDocCount(account.sender)
       if (account.docuCnt == 0) {
         INFO(`[WARN] No document!! - Need to prepare api beforn test`)
@@ -101,7 +103,7 @@ server.listen(port, async () => {
       else if (i == 0) {
         let docId = Web3Utils.hexToNumberString(account.sender + (account.docuCnt - 1).toString())
         INFO(`gas: (update document) ${await test.updateEstimateGas(account.sender, docId)}`)
-      }
+      }*/
 
       accounts[i] = account;
       INFO(`Account[${i}]: ${JSON.stringify(account)}`)
@@ -373,7 +375,8 @@ function getParams(_reqBody) {
 
 const router = express.Router()
 router.route('/prepare').post(createDocu)   // createDocument
-router.route('/transfer').post(updateDocu)  // updateDocument
+router.route('/transfer').post(createDocu)  // updateDocument
+//router.route('/transfer').post(updateDocu)  // updateDocument
 router.route('/transferMulti').post(updateDocu2)  // updateDocument2
 router.route('/transferCount').get(transferCount)
 router.route('/txpool').get(txpool)

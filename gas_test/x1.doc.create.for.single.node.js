@@ -7,8 +7,8 @@ const Web3Utils = require('web3-utils');
 
 const crypto = require('crypto');
 
-const utils = require('./utils')
-const test = require('./test.doc')
+const utils = require('../common/utils')
+const test = require('../common/test.doc')
 
 const INFO = (msg) => console.log(msg)
 const ERROR = (msg) => console.error(msg)

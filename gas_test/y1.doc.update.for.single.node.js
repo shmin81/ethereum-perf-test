@@ -111,8 +111,9 @@ async function main() {
   let simLines = simContents.split(/\r\n|\n/)
   let allLines = simLines.length
   for (let i=0; i<allLines; i++) {
-    const lineStr = simLines[i]
-    if (lineStr.length < 2) continue
+    const lineStr = simLines[i].trim()
+    if (lineStr.length < 5) continue
+    if (lineStr.startsWith('/')) continue
     const strs = lineStr.split(',')
     result = await updateDocu(caseIdx, strs[0], strs[3])
 

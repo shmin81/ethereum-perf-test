@@ -29,7 +29,7 @@ const conf = utils.loadConf(confPath)
 
 //const caseIdx = Number(args[1])
 let inputLog = `./test.create.doc.ids.log`
-let debugLog = `./test.create.doc.ids.txt`
+let debugLog = `./results/test.create.doc.ids.txt`
 
 
 // In-memory status
@@ -61,6 +61,8 @@ let minGasE = 1000000
 let minGasR = 1000000
 let maxGasE = 1
 let maxGasR = 1
+let minGasOffset = 1000000
+let maxGasOffset = 1
 function setMinMax(_egas, _rgas) {
   if (_egas < minGasE) {
     minGasE = _egas
@@ -74,6 +76,13 @@ function setMinMax(_egas, _rgas) {
   if (_rgas > maxGasR) {
     maxGasR = _rgas
   }
+  let gasOffset = _egas - _rgas
+  if (gasOffset < minGasOffset) {
+    minGasOffset = gasOffset
+  }
+  if (gasOffset > maxGasOffset) {
+    maxGasOffset = gasOffset
+  }
 }
 
 async function main() {
@@ -85,8 +94,9 @@ async function main() {
   let allLines = simLines.length
   for (let i=0; i<allLines; i++) {
   //for (let i=0; i<2; i++) {
-    const lineStr = simLines[i]
-    if (lineStr.length < 2) continue
+    const lineStr = simLines[i].trim()
+    if (lineStr.length < 5) continue
+    if (lineStr.startsWith('/')) continue
     INFO(lineStr)
     const strs = lineStr.split(',')
     if (strs.length < 7) {
@@ -106,9 +116,13 @@ async function main() {
       WRITE('\n')
     }
   } // end for
-  INFO('=======================')
-  INFO(`estmate gas: ${minGasE} ~ ${maxGasE} [${maxGasE - minGasE}]`)
-  INFO(`used gas: ${minGasR} ~ ${maxGasR} [${maxGasR - minGasR}]`)
+
+  let resultStr = '// =======================\n'
+  resultStr += `// estmate gas: ${minGasE} ~ ${maxGasE} [${maxGasE - minGasE}]\n`
+  resultStr += `// used gas: ${minGasR} ~ ${maxGasR} [${maxGasR - minGasR}]\n`
+  resultStr += `// gas offset: ${minGasOffset} ~ ${maxGasOffset} [${maxGasOffset - minGasOffset}]\n`
+  //WRITE(resultStr) // 재 실행시 에러 발생
+  INFO(resultStr)
 }
 
 main()
